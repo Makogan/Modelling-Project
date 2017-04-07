@@ -1,7 +1,4 @@
 EXEFILE = template
-VSHADER = VertexShader.glsl
-FSHADER = FragmentShader.glsl
-SHADERDIR = Shaders
 
 IFLAGS= -I/usr/include/freetype2
 LFLAGS= -L/usr/lib/nvidia-367 -L/usr/local/lib -L/usr/include/GL -L/usr/local/include/freetype2 -L/usr/local/lib/
@@ -15,7 +12,7 @@ $(EXEFILE): template.cpp
 all: run
 
 run: $(EXEFILE)
-	./$(EXEFILE) $(SHADERDIR)/$(VSHADER) $(SHADERDIR)/$(FSHADER)
+	./$(EXEFILE)
 
 clean:
 	rm $(EXEFILE)

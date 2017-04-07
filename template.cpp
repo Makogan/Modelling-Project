@@ -40,6 +40,7 @@
 #include "Camera.h"
 #include "CustomOperators.h"
 #include "FloorGraph.h"
+#include "Half-Edge.h"
 
 using namespace std;
 using namespace glm;
@@ -97,7 +98,7 @@ void callBackInit(GLFWwindow* window);
 void loadGeometryArrays(GLuint program, Geometry &g);
 void render(GLuint program, Geometry &g, GLenum drawType);
 void compileShader(GLuint &shader, string &filepath, GLenum shaderType);
-void initDefaultShaders(vector<Shader> &shaders, char** argv);
+void initDefaultShaders(vector<Shader> &shaders);
 void initDefaultProgram(vector<GLuint> &programs, vector<Shader> &shaders);
 void createShader(Shader &s, string file, GLenum type);
 void deleteShader(Shader &s);
@@ -169,7 +170,7 @@ int main(int argc, char **argv)
 	Geometry g;
 	shapes.push_back(g);
 
-	initDefaultShaders(shaders, argv);
+	initDefaultShaders(shaders);
 	initDefaultProgram(programs, shaders);
 
 	createGeometry(shapes[0]);
@@ -629,19 +630,17 @@ void initDefaultProgram(vector<GLuint> &programs, vector<Shader> &shaders)
 	shaders[1].program=programs[0];
 }
 
-void initDefaultShaders(vector<Shader> &shaders, char** argv)
+void initDefaultShaders(vector<Shader> &shaders)
 {
-	string str1(argv[1]);
 	Shader s1;
 	shaders.push_back(s1);
 
-	createShader(shaders[0], str1, GL_VERTEX_SHADER);
+	createShader(shaders[0], "Shaders/VertexShader.glsl", GL_VERTEX_SHADER);
 
-	string str2(argv[2]);
 	Shader s2;
 	shaders.push_back(s2);
 
-	createShader(shaders[1], str2, GL_FRAGMENT_SHADER);
+	createShader(shaders[1], "Shaders/FragmentShader.glsl", GL_FRAGMENT_SHADER);
 }
 //########################################################################################
 
