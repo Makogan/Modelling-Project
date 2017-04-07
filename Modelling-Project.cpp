@@ -80,7 +80,6 @@ struct Geometry
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 Camera cam;
-Graph* graph;
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -130,27 +129,6 @@ double calculateFPS(double prevTime, double currentTime);
 
 int main(int argc, char **argv)
 {
-	/*FT_Library ft;
-
-	if(FT_Init_FreeType(&ft)) {
-	  fprintf(stderr, "Could not init freetype library\n");
-	  return 1;
-	}
-
-	FT_Face face;
-
-	if(FT_New_Face(ft, "Fonts/OptimusPrinceps.ttf", 0, &face)) {
-	  fprintf(stderr, "Could not open font\n");
-	  return 1;
-	}
-
-	FT_Set_Pixel_Sizes(face, 0, 48);
-
-	if(FT_Load_Char(face, 'X', FT_LOAD_RENDER)) {
-  	fprintf(stderr, "Could not load character 'X'\n");
-  	return 1;
-	}*/
-
 	GLFWwindow* window = createWindow();
 
 	callBackInit(window);
@@ -166,9 +144,7 @@ int main(int argc, char **argv)
 //**********************************************************************************
 	vector<GLuint> programs;
 	vector<Shader> shaders;
-	vector<Geometry> shapes;
-	Geometry g;
-	shapes.push_back(g);
+	vector<Geometry> shapes(1);
 
 	initDefaultShaders(shaders);
 	initDefaultProgram(programs, shaders);
@@ -176,19 +152,9 @@ int main(int argc, char **argv)
 	createGeometry(shapes[0]);
 //***********************************************************************************
 
-	Node *testNode = new Node();
-	shapes[0].vertices = testNode->getNodeCircle();
-	graph= new Graph(testNode);
+	vector<vec3> testVerts = {vec3(-10,0,0), vec3(10,0,0), vec3(0,0,10)};
 
-	for(uint i=0; i<2; i++)
-	{
-		graph->addNode(new Node());
-		graph->connect(0,graph->nodes.size()-1);
-	}
-
-	graph->balanceNodes();
-
-	//graph->nodes[0]->position = vec3(0);
+	HE_Object testO = HE_Object(testVerts);
 
 	int width, height;
 	glfwGetWindowSize(window, &width, &height);
@@ -196,7 +162,7 @@ int main(int argc, char **argv)
 
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LEQUAL);
-		glPointSize(10.f);
+	glPointSize(10.f);
 	while (!glfwWindowShouldClose(window))
 	{
 		if(loadViewProjMatrix(cam, programs[0])!=0)
@@ -205,28 +171,9 @@ int main(int argc, char **argv)
 		glClearColor(0, 0.2f, 0.2f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		vector<vec3> centers;
-		for(Node *n: graph->nodes)
-		{
-			shapes[0].vertices = n->getNodeCircle();
-			centers.push_back(n->position);
-			loadGeometryArrays(programs[0], shapes[0]);
-
-			loadColor(vec4(0,0.3,1,1), programs[0]);
-			render(programs[0], shapes[0], GL_LINE_STRIP);
-		}
-
-		shapes[0].vertices = centers;
-		loadColor(vec4(0,0.3,1,1), programs[0]);
+		testO.getGeometry(shapes[0].vertices, shapes[0].indices);
 		loadGeometryArrays(programs[0], shapes[0]);
-		render(programs[0], shapes[0], GL_POINTS);
-
-		shapes[0].indices = graph->getEdges();
-		loadColor(vec4(0,0.3,1,1), programs[0]);
-		loadGeometryArrays(programs[0], shapes[0]);
-		render(programs[0], shapes[0], GL_LINES);
-
-		shapes[0].indices.clear();
+		render(programs[0], shapes[0], GL_TRIANGLES);
 
 		GLenum status = openGLerror();
 		if(status!=GL_NO_ERROR)
@@ -664,7 +611,7 @@ void initDefaultShaders(vector<Shader> &shaders)
 	return pos;
 }*/
 
-int cursorSelectNode(GLFWwindow *window)
+/*int cursorSelectNode(GLFWwindow *window)
 {
 	double xpos, ypos;
 	glfwGetCursorPos(window, &xpos, &ypos);
@@ -696,7 +643,7 @@ int cursorSelectNode(GLFWwindow *window)
 		return count;
 	else
 		return -1;
-}
+}*/
 //########################################################################################
 
 //========================================================================================
@@ -710,10 +657,10 @@ void error_callback(int error, const char* description)
     cout << "Error: " << description << endl;
 }
 
-int selectedNode =-1;
+//int selectedNode =-1;
 void cursor_pos_callback(GLFWwindow* window, double xpos, double ypos)
 {
-	int state = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT);
+	/*int state = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT);
 	if (state == GLFW_PRESS && selectedNode>-1)
 	{
 		int width, height;
@@ -724,12 +671,12 @@ void cursor_pos_callback(GLFWwindow* window, double xpos, double ypos)
 
 		graph->nodes[selectedNode]->position = unProject(vec3(xpos, height-ypos, depth),
 			cam.getViewMatrix(), cam.getPerspectiveMatrix(), vec4(0.f,0.f,(float)width, (float)height));
-	}
+	}*/
 }
 
 void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 {
-	selectedNode = cursorSelectNode(window);
+	//selectedNode = cursorSelectNode(window);
 }
 
 #define CAM_SPEED 0.5f

@@ -1,4 +1,7 @@
-class Vertx;
+/*
+  Still in testing, multiple known edge cases that break things!!!!
+*/
+class Vertex;
 class HalfEdge;
 class Face;
 class HE_Object;
@@ -21,7 +24,7 @@ public:
 class Face
 {
 public:
-  HalfEdge *halfEdge;
+  HalfEdge *halfEdge = NULL;
   vec3 normal;
 
   HE_Object *myObject;
@@ -49,6 +52,7 @@ public:
   vector<Vertex*> vertices;
   vector<Face*> faces;
   vector<HalfEdge*> edges;
+  vector<uint> indices;
 
   HE_Object(vector<vec3> vertices, vector<uint> indices);
   HE_Object(vector<vec3> vertices);
@@ -57,12 +61,28 @@ public:
 
   vector<Vertex*> findVertexNeighbours(Vertex* vert);
   vector<HalfEdge*> findCyle(HalfEdge *e);
+
+  void getGeometry(vector<vec3> &verts, vector<uint> &indices);
 };
 
+void HE_Object::getGeometry(vector<vec3> &verts, vector<uint> &indices)
+{
+  indices = this->indices;
+  verts.clear();
+  for(Vertex *v:vertices)
+  {
+    verts.push_back(v->position);
+  }
+}
+
+//returns the half edge starting at v1 and ending at v2
+//returns NULL if no such edge could be found
 HalfEdge* HE_Object::findEdge(Vertex *v1, Vertex *v2)
 {
   HalfEdge *original = v1->halfEdge;
 
+  //if v1 has no outgoing edges, then it trivially has no edge
+  //going from it to v2
   if(original==NULL)
     return NULL;
 
@@ -79,6 +99,9 @@ HalfEdge* HE_Object::findEdge(Vertex *v1, Vertex *v2)
   return current;
 }
 
+//returns a vector containing all the half edges contained in the
+//same face as e, returns 0 otherwise. This mean that if there is
+//no cycle starting at e, it returns an empty vector 
 vector<HalfEdge*> HE_Object::findCyle(HalfEdge *e)
 {
   HalfEdge *original = e;
@@ -98,15 +121,22 @@ vector<HalfEdge*> HE_Object::findCyle(HalfEdge *e)
   return cycle;
 }
 
+//find all the vertices that share an edge with vertex vert
+//returns an empty vector if no such vertices exist
+//only works for triangular meshes and only for 2d manifolds
+//If errors happen suspect this!
 vector<Vertex*> HE_Object::findVertexNeighbours(Vertex *vert)
 {
   HalfEdge *original = vert->halfEdge;
 
+  //if there is no edge comming out of vertex vert, trivially,there are no
+  //vertices sharing an edge with vert
   if(original==NULL)
     return vector<Vertex*>();
 
   HalfEdge *current = original;
   vector<Vertex*> neighbours;
+  //we iterate through the edges counter-clockwise
   do
   {
     Vertex* v = current->next->source;
@@ -118,14 +148,31 @@ vector<Vertex*> HE_Object::findVertexNeighbours(Vertex *vert)
   return neighbours;
 }
 
+HE_Object::HE_Object(vector<vec3> verts)
+{
+  vector<uint> indexes;
+  for(uint i=0; i<verts.size(); i++)
+  {
+    indexes.push_back(i);
+  }
+
+  HE_Object *temp = new HE_Object(verts, indices);
+  this->vertices = temp->vertices;
+  this->faces = temp->faces;
+  this->edges = temp->edges;
+  this->indices = indexes;
+}
+
 HE_Object::HE_Object(vector<vec3> verts, vector<uint> indices)
 {
   //Ensure this HE_Object is empty
   vertices.clear();
   faces.clear();
   edges.clear();
+  this->indices.clear();
+  this->indices = indices;
 
-  //create all teh vertices of the object
+  //create all the vertices of the object
   for(vec3 v: verts)
   {
     vertices.push_back(new Vertex(v, this));
@@ -191,7 +238,7 @@ HE_Object::HE_Object(vector<vec3> verts, vector<uint> indices)
 
 
 
-
+//Pre-condition: there is no edge between v1 and v2
 void Vertex::connect(Vertex *v1, Vertex *v2)
 {
   HalfEdge *halfE1 = new HalfEdge(v1, v1->myObject);
