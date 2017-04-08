@@ -95,6 +95,7 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 void cursor_pos_callback(GLFWwindow* window, double xpos, double ypos);
 void callBackInit(GLFWwindow* window);
 void loadGeometryArrays(GLuint program, Geometry &g);
+void setDrawingMode(int mode, GLuint program);
 void render(GLuint program, Geometry &g, GLenum drawType);
 void compileShader(GLuint &shader, string &filepath, GLenum shaderType);
 void initDefaultShaders(vector<Shader> &shaders);
@@ -207,6 +208,19 @@ int main(int argc, char **argv)
 *	Rendering Functions:
 */
 //========================================================================================
+void setDrawingMode(int mode, GLuint program)
+{
+	glUseProgram(program);
+	GLint loc = glGetUniformLocation(program, "drawMode");
+	if(loc == GL_INVALID_VALUE || loc==GL_INVALID_OPERATION)
+	{
+		cerr << "Error returned when trying to find uniform location."
+			<< "\nuniform: drawMode"
+			<< "Error num: " << loc
+			<< endl;
+	}
+	glUniform1i(loc, mode);
+}
 
 //Need more versions of this:
 void loadGeometryArrays(GLuint program, Geometry &g)
@@ -252,6 +266,20 @@ void render(GLuint program, Geometry &g, GLenum drawType)
 		glDrawArrays(drawType, 0, g.vertices.size());
 }
 
+int loadColor(vec4 color, GLuint program)
+{
+	glUseProgram(program);
+	GLint loc = glGetUniformLocation(program, "color");
+	/*if (loc == -1)
+	{
+		cerr << "Uniform: error loading \"color\"." << endl;
+		return -1;
+	}*/
+	glUniform4f(loc, color[0], color[1], color[2], color[3]);
+
+	return 1;
+}
+
 int loadViewProjMatrix(Camera &c, GLuint &program)
 {
 	glUseProgram(program);
@@ -279,20 +307,6 @@ int loadViewProjMatrix(Camera &c, GLuint &program)
 	glUniformMatrix4fv(loc, 1, GL_FALSE, value_ptr(c.getPerspectiveMatrix()));
 
 	return 0;
-}
-
-int loadColor(vec4 color, GLuint program)
-{
-	glUseProgram(program);
-	GLint loc = glGetUniformLocation(program, "color");
-	if (loc == -1)
-	{
-		cerr << "Uniform: \"color\" not found." << endl;
-		return -1;
-	}
-	glUniform4f(loc, color[0], color[1], color[2], color[3]);
-
-	return 1;
 }
 
 int loadCamera(vec3 cameraPos, GLuint program)
