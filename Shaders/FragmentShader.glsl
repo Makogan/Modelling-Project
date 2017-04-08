@@ -6,14 +6,26 @@ in vec3 vertexPos;
 out vec4 outColor;
 
 uniform vec4 color = vec4(1);
-uniform vec3 cameraPos;
+uniform vec3 light = vec3(0,5000,0);
+uniform vec3 cameraPos = vec3(0);
 
-uniform vec3 lightDirection = vec3(-1,0,0);
-uniform vec3 lightColor = vec3(1,1,1);
-uniform float ambientIntensity = 0.6f;
+uniform int drawMode = 1;
 
 void main()
 {
-    float diffuseIntensity = max(0.0f, dot(normalize(vec3(Normal)), -lightDirection));
-    outColor = color*vec4(lightColor*(ambientIntensity + diffuseIntensity), 1.0f);
+  if(drawMode==0)
+    outColor = color;
+  else
+  {
+    vec3 l = vec3(light-vertexPos);
+  	l = vec3(0,0,1);//normalize(l);
+  	vec3 c = vec3(color);
+  	vec3 n = vec3(Normal);
+    n = normalize(n);
+  	vec3 e = cameraPos-vertexPos;
+  	e = normalize(e);
+  	vec3 h = normalize(e+l);
+
+  	outColor = vec4(c*(vec3(0.5)+max(0,dot(n,l))) + vec3(0.1)*max(0,pow(dot(h,n), 1000)), 1);
+  }
 }

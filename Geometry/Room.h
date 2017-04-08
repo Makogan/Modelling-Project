@@ -7,11 +7,12 @@ class Wall
 {
 public:
 	vector<vec3> vertices;
+	vector<vec3> normals;
 	vector<uint> indices;
 
 	Wall(vec3 corner1, vec3 corner2);
 
-	void getGeometry(vector<vec3> &verts, vector<uint> &indices);
+	void getGeometry(vector<vec3> &verts, vector<uint> &indices, vector<vec3> &normals);
 	void move(vec3 offset);
 	void rotate(float angle, vec3 normal);
 	void scale(float scale);
@@ -29,7 +30,7 @@ public:
 	Room();
 	Room(vec3 position);
 
-	void getGeometry(vector<vec3> &verts, vector<uint> &indices);
+	void getGeometry(vector<vec3> &verts, vector<uint> &indices, vector<vec3> &normals);
 	void move(vec3 movement);
 	void rotate(float angle);
 	void scale(float scale);
@@ -82,16 +83,17 @@ Room::Room(vec3 position)
 	walls.push_back(new Wall(vec3(15,15,0)+position, vec3(-15,15,15)+position));
 }
 
-void Room::getGeometry(vector<vec3> &verts, vector<uint> &indices)
+void Room::getGeometry(vector<vec3> &verts, vector<uint> &indices, vector<vec3> &normals)
 {
 	verts.clear();
 	indices.clear();
 	vector<vec3> tvertices;
+	vector<vec3> tnormals;
 	vector<uint> tindices;
 
 	for(auto& wall:walls)
 	{
-		wall->getGeometry(tvertices, tindices);
+		wall->getGeometry(tvertices, tindices, tnormals);
 		for(uint i=0; i<tindices.size(); i++)
 		{
 			tindices[i]+=verts.size();
@@ -99,6 +101,7 @@ void Room::getGeometry(vector<vec3> &verts, vector<uint> &indices)
 
 		verts.insert( verts.end(), tvertices.begin(), tvertices.end());
 		indices.insert( indices.end(), tindices.begin(), tindices.end() );
+		normals.insert( normals.end(), tnormals.begin(), tnormals.end() );
 	}
 }
 
@@ -125,6 +128,23 @@ Wall::Wall(vec3 corner1, vec3 corner2)
 					5,7,2,	5,1,7,
 					1,7,4,	4,3,1
 			 	};
+
+	normals = vector<vec3>(vertices.size(), vec3(0));
+	for(uint i=0; i<indices.size(); i+=3)
+	{
+		vec3 v1 = normalize(vertices[indices[i+1]]-vertices[indices[i]]);
+		vec3 v2 = normalize(vertices[indices[i+2]]-vertices[indices[i+1]]);
+
+		vec3 normal = cross(v1,v2);
+		normals[indices[i]] += normal;
+		normals[indices[i+1]] += normal;
+		normals[indices[i+2]] += normal;
+	}
+
+	for(uint i=0; i<normals.size(); i++)
+	{
+		normals[i] = normalize(normals[i]);
+	}
 
 }
 
@@ -156,8 +176,9 @@ void Wall::scale(float scale)
 	}
 }
 
-void Wall::getGeometry(vector<vec3> &verts, vector<uint> &indices)
+void Wall::getGeometry(vector<vec3> &verts, vector<uint> &indices, vector<vec3> &normals)
 {
 	verts = this->vertices;
 	indices = this->indices;
+	normals = this->normals;
 }
