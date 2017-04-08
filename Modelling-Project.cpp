@@ -152,7 +152,7 @@ int main(int argc, char **argv)
 	createGeometry(shapes[0]);
 //***********************************************************************************
 
-	Room r = Room();
+	Room r = Room(vec3(-20,20,0));
 
 	int width, height;
 	glfwGetWindowSize(window, &width, &height);
@@ -171,7 +171,12 @@ int main(int argc, char **argv)
 
 		r.getGeometry(shapes[0].vertices, shapes[0].indices);
 		loadGeometryArrays(programs[0], shapes[0]);
-		render(programs[0], shapes[0], GL_TRIANGLES);
+		render(programs[0], shapes[0], GL_LINE_STRIP);
+
+		/*r.rotate(0.01);
+		float t = glfwGetTime();
+		if(t>2)
+			glfwSetTime(0);*/
 
 		GLenum status = openGLerror();
 		if(status!=GL_NO_ERROR)
