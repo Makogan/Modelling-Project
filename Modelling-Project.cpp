@@ -40,7 +40,7 @@
 #include "Camera.h"
 #include "CustomOperators.h"
 #include "FloorGraph.h"
-#include "Half-Edge.h"
+#include "Room.h"
 
 using namespace std;
 using namespace glm;
@@ -152,9 +152,7 @@ int main(int argc, char **argv)
 	createGeometry(shapes[0]);
 //***********************************************************************************
 
-	vector<vec3> testVerts = {vec3(-10,0,0), vec3(10,0,0), vec3(0,0,10)};
-
-	HE_Object testO = HE_Object(testVerts);
+	Room r = Room();
 
 	int width, height;
 	glfwGetWindowSize(window, &width, &height);
@@ -171,7 +169,7 @@ int main(int argc, char **argv)
 		glClearColor(0, 0.2f, 0.2f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		testO.getGeometry(shapes[0].vertices, shapes[0].indices);
+		r.getGeometry(shapes[0].vertices, shapes[0].indices);
 		loadGeometryArrays(programs[0], shapes[0]);
 		render(programs[0], shapes[0], GL_TRIANGLES);
 

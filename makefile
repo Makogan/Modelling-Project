@@ -10,14 +10,14 @@ LIBS = -lglfw -lGL -lGLU -lOpenGL -lGLEW -pthread -lfreetype
 SRC := $(wildcard *.cpp) $(wildcard **/*.cpp)
 
 $(EXEFILE): $(EXEFILE).cpp
-	g++ -std=c++11 -o $(EXEFILE) -Wall -Wno-comment $(SRC) $(IFLAGS) $(LOCAL_I_DIRS) $(LFLAGS) $(LIBS) 
+	@g++ -std=c++11 -o $(EXEFILE) -Wall -Wno-comment $(SRC) $(IFLAGS) $(LOCAL_I_DIRS) $(LFLAGS) $(LIBS) 
 
 all: run clean
 
 run: $(EXEFILE)
-	./$(EXEFILE)
+	@./$(EXEFILE)
 
 clean:
-	rm $(EXEFILE)
+	@rm $(EXEFILE)
 
 print-%: ; @echo $* = $($*)
