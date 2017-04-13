@@ -1,184 +1,65 @@
-//#include "Half-Edge.h"
+#include <vector>
+#include <glm/glm.hpp>
 
-class Room;
-class Wall;
-
-class Wall
-{
-public:
-	vector<vec3> vertices;
-	vector<vec3> normals;
-	vector<uint> indices;
-
-	Wall(vec3 corner1, vec3 corner2);
-
-	void getGeometry(vector<vec3> &verts, vector<uint> &indices, vector<vec3> &normals);
-	void move(vec3 offset);
-	void rotate(float angle, vec3 normal);
-	void scale(float scale);
-};
+using namespace std;
+using namespace glm;
 
 class Room
 {
 public:
-	int index;
-	vec3 offset = vec3(0);
+    int type;   //public = 0, private = 1, extra = 2
+    float size;
+    int index;
+    vector<Room*> neighbours;
+    Room* parent;
 
-	vector<Room> neighbours;
-	vector<Wall*> walls;
+    vector<vec3> vertices;
+    vector<vec3> normals;
+    vector<uint> indices;
 
-	Room();
-	Room(vec3 position);
+    vec2 basePos;
+    vec2 upRightPos;
+    vec2 downLeftPos;
 
-	void getGeometry(vector<vec3> &verts, vector<uint> &indices, vector<vec3> &normals);
-	void move(vec3 movement);
-	void rotate(float angle);
-	void scale(float scale);
+    float upExpand = 0.005f;
+    float rightExpand = 0.005f;
+    float downExpand = 0.005f;
+    float leftExpand = 0.005f;
+
+    Room(int _type, float _size, int _index):type(_type), size(_size), index(_index){}
+
+    vector<Room*> createRooms(int type, float size, int baseIndex, int maxNumRooms);
+    float area();
+
+    void getGeometry(vector<vec3> &verts, vector<vec3> &norms, vector<uint> &indexes);
 };
 
-void Room::scale(float scale)
+void Room::getGeometry(vector<vec3> &verts, vector<vec3> &norms, vector<uint> &indexes)
 {
-	for(Wall *w:walls)
-		w->move(-offset);
-
-	for(Wall *w:walls)
-		w->scale(scale);
-
-	for(Wall *w:walls)
-		w->move(offset);
+  verts = vertices;
+  norms = normals;
+  indexes=indices;
 }
 
-void Room::rotate(float angle)
+vector<Room*> Room::createRooms(int type, float size, int baseIndex, int maxNumRooms)
 {
-	for(Wall *w:walls)
-		w->move(-offset);
+    int numNewRooms = rand() % maxNumRooms + 1;
 
-	for(Wall *w:walls)
-		w->rotate(angle, vec3(0,0,1));
+    vector<Room*> addedRooms;
 
-	for(Wall *w:walls)
-		w->move(offset);
+    for(int i = 0; i < numNewRooms; i++)
+    {
+        Room *newRoom = new Room(type, size, baseIndex + i);
+        newRoom->neighbours.push_back(this);
+        newRoom->parent = this;
+        neighbours.push_back(newRoom);
+        addedRooms.push_back(newRoom);
+    }
+    return addedRooms;
 }
 
-void Room::move(vec3 movement)
-{
-	offset += movement;
-
-	for(Wall *w:walls)
-		w->move(movement);
-}
-
-Room::Room():Room(vec3(0)){}
-
-Room::Room(vec3 position)
-{
-	offset = position;
-	//floor
-	walls.push_back(new Wall(vec3(-15,-15,0)+position, vec3(15,15,-1)+position));
-	//left wall
-	walls.push_back(new Wall(vec3(-15,-15,0)+position, vec3(-13,15,15)+position));
-	//right wall
-	walls.push_back(new Wall(vec3(15,-15,0)+position, vec3(13,15,15)+position));	
-	//back wall
-	walls.push_back(new Wall(vec3(15,15,0)+position, vec3(-15,15,15)+position));
-}
-
-void Room::getGeometry(vector<vec3> &verts, vector<uint> &indices, vector<vec3> &normals)
-{
-	verts.clear();
-	indices.clear();
-	vector<vec3> tvertices;
-	vector<vec3> tnormals;
-	vector<uint> tindices;
-
-	for(auto& wall:walls)
-	{
-		wall->getGeometry(tvertices, tindices, tnormals);
-		for(uint i=0; i<tindices.size(); i++)
-		{
-			tindices[i]+=verts.size();
-		}
-
-		verts.insert( verts.end(), tvertices.begin(), tvertices.end());
-		indices.insert( indices.end(), tindices.begin(), tindices.end() );
-		normals.insert( normals.end(), tnormals.begin(), tnormals.end() );
-	}
-}
-
-Wall::Wall(vec3 corner1, vec3 corner2)
-{
-	vertices.push_back(corner1);
-	vertices.push_back(corner2);
-
-	for(uint i=0; i<3; i++)
-	{
-		vec3 side = vec3(0);
-		side[i] = vec3(corner2-corner1)[i];
-
-		vertices.push_back(corner1+side);
-		vertices.push_back(corner2-side);
-	}
-
-	//BAD CODING RIGHT HERE VVVVVVVV
-	indices = 	{	
-					0,2,4,	2,7,4, 
-					6,0,4,	4,3,6, 
-					0,6,2,	2,6,5, 
-					6,3,1,	1,5,6,
-					5,7,2,	5,1,7,
-					1,7,4,	4,3,1
-			 	};
-
-	normals = vector<vec3>(vertices.size(), vec3(0));
-	for(uint i=0; i<indices.size(); i+=3)
-	{
-		vec3 v1 = normalize(vertices[indices[i+1]]-vertices[indices[i]]);
-		vec3 v2 = normalize(vertices[indices[i+2]]-vertices[indices[i+1]]);
-
-		vec3 normal = cross(v1,v2);
-		normals[indices[i]] += normal;
-		normals[indices[i+1]] += normal;
-		normals[indices[i+2]] += normal;
-	}
-
-	for(uint i=0; i<normals.size(); i++)
-	{
-		normals[i] = normalize(normals[i]);
-	}
-
-}
-
-void Wall::rotate(float angle, vec3 normal)
-{
-	normal = normalize(normal);
-
-	for(uint i=0; i<vertices.size(); i++)
-	{
-		vec4 rotVec = vec4(vertices[i], 1);
-		rotVec = glm::rotate(angle, normal)*rotVec;
-		vertices[i] = vec3(rotVec);
-	}
-}
-
-void Wall::move(vec3 offset)
-{
-	for(uint i=0; i<vertices.size(); i++)
-	{
-		vertices[i]+=offset;
-	}
-}
-
-void Wall::scale(float scale)
-{
-	for(uint i=0; i<vertices.size(); i++)
-	{
-		vertices[i]*=scale;
-	}
-}
-
-void Wall::getGeometry(vector<vec3> &verts, vector<uint> &indices, vector<vec3> &normals)
-{
-	verts = this->vertices;
-	indices = this->indices;
-	normals = this->normals;
+float Room::area() {
+    float xLength = upRightPos.x - downLeftPos.x;
+    float yLength = upRightPos.y - downLeftPos.y;
+    return (xLength * yLength);
 }
