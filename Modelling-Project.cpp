@@ -739,65 +739,51 @@ void initDefaultShaders(vector<Shader> &shaders)
 */
 //========================================================================================
 
-int selectedRoom = -1;
-int nodeType;
-int cursorSelectNode(GLFWwindow *window)
-{
-	double xpos, ypos;
-	glfwGetCursorPos(window, &xpos, &ypos);
-
+float projectionOutput(GLFWwindow* window, vec3 pos) {
 	mat4 view= cam.getViewMatrix();
 	mat4 proj= cam.getPerspectiveMatrix();
 
-	uint count = 0;
+	double xpos, ypos;
+	glfwGetCursorPos(window, &xpos, &ypos);
 	int width, height;
 	glfwGetWindowSize(window, &width, &height);
 
-	vec3 screenPos;
+	vec2 v = vec2(xpos, height-ypos);
+
+	vec3 screenPos = project(pos, view, proj, vec4(0.f,0.f,(float)width, (float)height));
+	float depth = screenPos.z;
+	vec3 projCursor = unProject(vec3(v.x,v.y,depth), view, proj, vec4(0.f,0.f,(float)width, (float)height));
+	return length(projCursor - pos);
+}
+
+int selectedRoom = -1;
+int nodeType;
+int cursorSelectNode(GLFWwindow *window) {
 	vec3 pos;
-	float depth;
-	vec3 projCursor;
-
-	for(Room *node : fg.graph)
-	{
-		vec2 v = vec2(xpos, height-ypos);
-
+	uint count = 0;
+	for(Room *node : fg.graph) {
 		/* test if the room's basePos is being selected */
 		pos = vec3(node->basePos.x, -10.f, node->basePos.y);
-		screenPos = project(pos, view, proj, vec4(0.f,0.f,(float)width, (float)height));
-		depth = screenPos.z;
-		projCursor = unProject(vec3(v.x,v.y,depth), view, proj, vec4(0.f,0.f,(float)width, (float)height));
-
-		if(length(projCursor-pos) < 0.1) {
+		if (projectionOutput(window, pos) < 0.1) {
 			nodeType = 0;
 			break;
 		}
-
 		/* test if the room's upRightPos is being selected */
 		pos = vec3(node->upRightPos.x, -10.f, node->upRightPos.y);
-		screenPos = project(pos, view, proj, vec4(0.f,0.f,(float)width, (float)height));
-		depth = screenPos.z;
-		projCursor = unProject(vec3(v.x,v.y,depth), view, proj, vec4(0.f,0.f,(float)width, (float)height));
-
-		if(length(projCursor-pos) < 0.1) {
+		if (projectionOutput(window, pos) < 0.1) {
 			nodeType = 1;
 			break;
 		}
-
 		/* test if the room's downLeftPos is being selected */
 		pos = vec3(node->downLeftPos.x, -10.f, node->downLeftPos.y);
-		screenPos = project(pos, view, proj, vec4(0.f,0.f,(float)width, (float)height));
-		depth = screenPos.z;
-		projCursor = unProject(vec3(v.x,v.y,depth), view, proj, vec4(0.f,0.f,(float)width, (float)height));
-
-		if(length(projCursor-pos) < 0.1) {
+		if (projectionOutput(window, pos) < 0.1) {
 			nodeType = 2;
 			break;
 		}
-
 		count++;
 	}
-	if(count < fg.graph.size())
+
+	if (count < fg.graph.size())
 		return count;
 	else
 		return -1;

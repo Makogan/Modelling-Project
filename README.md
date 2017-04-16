@@ -30,15 +30,22 @@ __Holding and dragging the top right corner of a room__: scale the room up or do
 
 __Holding and dragging the bottom left corner of a room__: scale the room up or down by its bottom left position
 
-A Node is one of the black squares, each of which is associated with a room. The rooms start 'expanding,' as described by Martin, from that point. Notice that the graph that shows which rooms ought to be connected to each other is visible as black lines connecting the Nodes. The white squares are the intersections of the graph's lines and the walls, which are the initial locations of doors.
+A Node is one of the black squares, each of which is associated with a room. The rooms start 'expanding,' as described by Martin, from that point. Notice that the graph that shows which rooms ought to be connected to each other is visible as black lines connecting the Nodes. The white squares are the intersections of the graph's lines and the walls, which are the initial locations of doors. Because of this, if the Node's position is moved without moving its room, the location of the door on the room also changes.
 
 __Clicking on a Node__ selects it, and so doing selects its room.
 
-__I, J, K, L__: delete the wall (of the selected room) associated with the button pressed. IJKL on a QWERTY Keyboard is synonymous with WASD, i.e. I = W = North, K = S = South, J = A = West, and L = D = East.
+__I, J, K, L__: delete the wall (of the selected room) associated with the button pressed. IJKL on a QWERTY Keyboard is synonymous with WASD, i.e. I = W = North, K = S = South, J = A = West, and L = D = East
 
-__Holding and Dragging a Node with Left CTRL held down__: move the Node without moving its associated room.
+__Holding and Dragging a Node with Left CTRL held down__: move the Node without moving its associated room
 
 __Right CTRL__: toggles 3D walls (to better see which walls are deleted)
 
 ### UI
 __Esc__: close the program
+
+## Other Notes
+There are three colours to represent Martin's three classes of rooms: green represents Public rooms, such as living or dining rooms. Red represents Private rooms, such as bedrooms. Yellow represents Extra rooms, such as closets. Notice that Extra rooms do not stop Public rooms from expanding or vice-versa, as some Extra rooms can be thought of as being 'contained' by a Public room (think of a walk-in closet, for example). This also allows public rooms to naturally be in L-shaped, U-shaped or O-shaped varieties, giving the rooms more flavour than simply being adjacent rectangles (although this could be done by the user later, if they wanted).
+
+Sometimes small gaps are left behind between rooms from the expansion method that cannot be filled in procedurally. The user may either move the other rooms around using our program's manipulative abilities, or simply consider them another room.
+
+Private rooms, by their nature, cannot have their walls be deleted.
