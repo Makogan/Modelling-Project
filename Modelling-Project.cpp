@@ -215,7 +215,7 @@ int main(int argc, char **argv)
 			return 1;
 
 		if (isExpanding) fg.expandRooms();
-		if (isExpanding) fg.setDoors();
+		fg.setDoors();
 		renderRooms(shapes[0], programs[0]);
 
 		GLenum status = openGLerror();

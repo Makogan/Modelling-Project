@@ -246,24 +246,13 @@ vec2 intersectingPoint(vec2 vec1Pos, vec2 vec1Dir, vec2 vec2Pos, vec2 vec2Dir) {
       t*(vec1Dir.y) = vec2Pos.y - vec1Pos.y
   */
   float t = 0.f;
-  float s = 0.f;
   if (vec2Dir.x == 0) {
     t = (vec2Pos.x - vec1Pos.x) / vec1Dir.x;
-    /*
-      t*(vec1Dir.y) - s*(vec2Dir.y) = vec2Pos.y - vec1Pos.y
-      s*(vec2Dir.y) = t*(vec1Dir.y) - (vec2Pos.y - vec1Pos.y)
-    */
-    s = (t*(vec1Dir.y) - (vec2Pos.y - vec1Pos.y)) / vec2Dir.y;
   } else if (vec2Dir.y == 0) {
-    t = (vec2Pos.y - vec1Pos.y) / vec1Dir.y;  
-    /*
-      t*(vec1Dir.x) - s*(vec2Dir.x) = vec2Pos.x - vec1Pos.x
-      s*(vec2Dir.x) = t*(vec1Dir.x) - (vec2Pos.x - vec1Pos.x)
-    */
-    s = (t*(vec1Dir.x) - (vec2Pos.x - vec1Pos.x)) / vec2Dir.x;
+    t = (vec2Pos.y - vec1Pos.y) / vec1Dir.y;
   }
 
-  return (vec2Pos + s*vec2Dir);
+  return (vec1Pos + t*vec1Dir);
 }
 
 vec2 Room::getDoorPos() {
