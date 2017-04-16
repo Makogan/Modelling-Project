@@ -1,6 +1,6 @@
-# CPSC 589 Modelling, UCalgary, Faramarz Samavati
+# The Big Modelling Project
 ### Developed by: [Susant Pant](https://github.com/susant-pant), [Camilo Talero](https://github.com/Makogan), [Shannon Tucker-Jones](https://github.com/ShannonTJ)
-## Course Project
+## Description
 The Procedural Generation of a residential house, starting with a basic floor plan derived from a room-expansion algorithm, as described in [Jess Martin's paper "Procedural House Generation: A method for dynamically generating floor plans."](http://axon.cs.byu.edu/Dan/673/papers/martin.pdf) We focused on the possibility of the user being able to manipulate and specify the output of the procedural method, so that the final result is aesthetically pleasing but much simpler to create than starting from scratch. Additions include: removing walls, moving room-locations, and shrinking and scaling rooms, with further additions remaining on customizing the space with furniture, doors and windows, each of which will have modifiable positions.
 
 ## Interaction
