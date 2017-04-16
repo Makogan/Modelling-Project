@@ -180,7 +180,7 @@ void Room::setRoomGeometry()
     prismBase.push_back(corners[i]);
     prismBase.push_back(corners[(i+1)%corners.size()]);
 
-    vec3 offset =  corners[(i+2)%corners.size()] - corners[(i+1)%corners.size()];
+    //vec3 offset =  corners[(i+2)%corners.size()] - corners[(i+1)%corners.size()];
   }
 
 
