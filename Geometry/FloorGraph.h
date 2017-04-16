@@ -177,7 +177,10 @@ void FloorGraph::setDoors() {
 		room = graph[queue.front()];
 		queue.pop();
 
-		doors.push_back(room->getDoorPos());
+		vec2 roomPos = room->getDoorPos();
+
+		if (roomPos.x != 0.f || roomPos.y != 0.f)
+			doors.push_back(roomPos);
 
 		for (Room* neib : room->neighbours) {
 			if (room->index < neib->index)

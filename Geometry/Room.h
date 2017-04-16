@@ -266,24 +266,44 @@ vec2 Room::getDoorPos() {
     if (edgeVector.x >= 0.f && edgeVector.y >= 0.f) {
       wallStartPos = upRightPos;
       getWallByQuadrant(this, wallVector, wallStartPos, edgeVector);
+      if (wallVector.y == 0.f && !renderWall[0]) {
+          return vec2(0.f, 0.f);
+      } else if (wallVector.y != 0.f && !renderWall[3]) {
+          return vec2(0.f, 0.f);
+      }
     }
 
     /* second quadrant, top left */
     else if (edgeVector.x < 0.f && edgeVector.y >= 0.f) {
       wallStartPos = vec2(downLeftPos.x, upRightPos.y);
       getWallByQuadrant(this, wallVector, wallStartPos, edgeVector);
+      if (wallVector.x == 0.f && !renderWall[1]) {
+          return vec2(0.f, 0.f);
+      } else if (wallVector.x != 0.f && !renderWall[0]) {
+          return vec2(0.f, 0.f);
+      }
     }
 
     /* third quadrant, bottom left */
     else if (edgeVector.x <= 0.f && edgeVector.y < 0.f) {
       wallStartPos = downLeftPos;
       getWallByQuadrant(this, wallVector, wallStartPos, edgeVector);
+      if (wallVector.y == 0.f && !renderWall[2]) {
+          return vec2(0.f, 0.f);
+      } else if (wallVector.y != 0.f && !renderWall[1]) {
+          return vec2(0.f, 0.f);
+      }
     }
 
     /* fourth quadrant, bottom right */
     else if (edgeVector.x > 0.f && edgeVector.y < 0.f) {
       wallStartPos = vec2(upRightPos.x, downLeftPos.y);
       getWallByQuadrant(this, wallVector, wallStartPos, edgeVector);
+      if (wallVector.x == 0.f && !renderWall[3]) {
+          return vec2(0.f, 0.f);
+      } else if (wallVector.x != 0.f && !renderWall[2]) {
+          return vec2(0.f, 0.f);
+      }
     }
 
     return (intersectingPoint(edgeStartPos, edgeVector, wallStartPos, wallVector));
