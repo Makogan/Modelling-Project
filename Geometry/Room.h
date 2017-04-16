@@ -33,8 +33,7 @@ public:
 
     vector<Room*> createRooms(int type, float size, int baseIndex, int maxNumRooms);
     float area();
-    void getGeometry(vector<vec3> &verts, vector<vec3> &norms, vector<uint> &indexes);
-    void setRoomGeometry(bool is3D);
+    void setRoomGeometry(bool is3D, vector<vec3> &vertices, vector<vec3> &normals, vector<uint> &indices);
     vec2 getDoorPos();
 };
 
@@ -171,15 +170,8 @@ void createPrism(vector<vec3> &vertices, vector<vec3> &normals, vector<uint> &in
   }
 }
 
-void Room::getGeometry(vector<vec3> &verts, vector<vec3> &norms, vector<uint> &indexes)
-{
-  verts = vertices;
-  norms = normals;
-  indexes=indices;
-}
-
-void Room::setRoomGeometry(bool is3D)
-{
+void Room::setRoomGeometry(bool is3D, vector<vec3> &vertices, vector<vec3> &normals, vector<uint> &indices)
+{ 
   vec3 corner1 = vec3(upRightPos.x, -10.f, upRightPos.y);
   vec3 corner3 = vec3(downLeftPos.x, -10.f, downLeftPos.y);
 
@@ -195,26 +187,31 @@ void Room::setRoomGeometry(bool is3D)
   corners.push_back(corner3);
   corners.push_back(corner4);
 
-  createPrism(vertices, normals, indices, corner1, corner3, wallThickness);
+  if (is3D)
+    createPrism(vertices, normals, indices, corner1, corner3, wallThickness);
+  else
+    createPrism(vertices, normals, indices, corner1, corner3, 0.f);
 
-  if (is3D) {
-    for(uint i=0; i<4; i++)
-    {
-      if (renderWall[i]) {
-        vector<vec3> verts, norms;
-        vector<uint> indexes;
+  for(uint i=0; i<4; i++) {
+    if (renderWall[i]) {
+      vector<vec3> verts, norms;
+      vector<uint> indexes;
 
-        vec3 offset =  corners[(i+2)%corners.size()] - corners[(i+1)%corners.size()];
-        vec3 wallCorner = (corners[(i+1)%corners.size()]+normalize(offset)*wallThickness);
-        createPrism(verts, norms, indexes, corners[i], wallCorner+normalize(offset)*wallThickness, -1);
+      vec3 offset =  corners[(i+2)%corners.size()] - corners[(i+1)%corners.size()];
+      vec3 wallCorner = (corners[(i+1)%corners.size()] + normalize(offset) * 2.f * wallThickness);
 
-        uint iOffset = vertices.size();
-        for(uint i: indexes)
-          indices.push_back(i+iOffset);
+      if (is3D)
+        createPrism(verts, norms, indexes, corners[i], wallCorner, -1);
+      else
+        createPrism(verts, norms, indexes, corners[i], wallCorner, 0);
 
-        vertices.insert( vertices.end(), verts.begin(), verts.end());
-        normals.insert(normals.end(), norms.begin(), norms.end());
-      }
+
+      uint iOffset = vertices.size();
+      for(uint i: indexes)
+        indices.push_back(i+iOffset);
+
+      vertices.insert( vertices.end(), verts.begin(), verts.end());
+      normals.insert(normals.end(), norms.begin(), norms.end());
     }
   }
 }

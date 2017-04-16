@@ -23,13 +23,12 @@ public:
   void expandRooms();
   void setRoomsPos();
   void getRoomsPos(vector<vec3> &input);
-  void setRoomsFloors(bool is3D);
   void getRoomsOutlines(vector<vec3> &vertices, vector<uint> &indices);
   void getEdges(vector<vec3> &vertices);
   void setDoors();
   void getDoors(vector<vec3> &vertices);
   void setHouseOutline();
-  void getHouseOutline(vector<vec3> &vertices);
+  void getHouseOutline(bool is3D, vector<vec3> &vertices, vector<vec3> &normals, vector<uint> &indices);
 
   float findLowestPos();
   float findHighestPos();
@@ -157,12 +156,6 @@ void FloorGraph::getRoomsOutlines(vector<vec3> &vertices, vector<uint> &indices)
   }
 }
 
-void FloorGraph::setRoomsFloors(bool is3D)
-{
-  for(Room* room : graph)
-    room->setRoomGeometry(is3D);
-}
-
 void FloorGraph::getRoomsPos(vector<vec3> &vertices)
 {
 	vertices.clear();
@@ -264,13 +257,35 @@ void FloorGraph::setHouseOutline(){
 		houseOutline.push_back(vec2(rightmost, i));
 		rightmost = findRightmostPos(i);
 	}
+
 	houseOutline.push_back(houseOutline[0]);
+	houseOutline.push_back(houseOutline[1]);
 }
 
-void FloorGraph::getHouseOutline(vector<vec3> &vertices) {
-	vertices.clear();
-	for (vec2 pos : houseOutline) {
-		vertices.push_back(vec3(pos.x, -10.f, pos.y));
+void FloorGraph::getHouseOutline(bool is3D, vector<vec3> &vertices, vector<vec3> &normals, vector<uint> &indices) {
+	
+	for (uint i = 0; i < houseOutline.size(); i++) {
+		if (is3D) {
+			vector<vec3> verts, norms;
+			vector<uint> indexes;
+
+			vec3 offsetEnd = vec3(houseOutline[(i+2)%houseOutline.size()].x, -10.f, houseOutline[(i+2)%houseOutline.size()].y);
+			vec3 offsetStart = vec3(houseOutline[(i+1)%houseOutline.size()].x, -10.f, houseOutline[(i+1)%houseOutline.size()].y);
+			vec3 current = vec3(houseOutline[(i)%houseOutline.size()].x, -10.f, houseOutline[(i)%houseOutline.size()].y);
+
+			vec3 offset =  offsetEnd - offsetStart;
+			vec3 wallCorner = (offsetStart + normalize(offset) * 0.1f);
+			createPrism(verts, norms, indexes, current, wallCorner, -1);
+
+			uint iOffset = vertices.size();
+			for(uint i: indexes)
+			  indices.push_back(i+iOffset);
+
+			vertices.insert(vertices.end(), verts.begin(), verts.end());
+			normals.insert(normals.end(), norms.begin(), norms.end());
+		} else {
+			vertices.push_back(vec3(houseOutline[i].x, -10.f, houseOutline[i].y));
+		}
 	}
 }
 

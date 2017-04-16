@@ -256,9 +256,9 @@ void renderRooms(Geometry shape, GLuint program)
 	glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glEnable(GL_DEPTH_TEST);
-	fg.setRoomsFloors(is3D);
 
 	setDrawingMode(1, program);
+
 	for(Room *r: fg.graph)
 	{
 		vec4 color = vec4(0);
@@ -270,7 +270,7 @@ void renderRooms(Geometry shape, GLuint program)
 			color = vec4(1,1,0,1);
 		loadColor(color, program);
 
-		r->getGeometry(shape.vertices, shape.normals, shape.indices);
+		r->setRoomGeometry(is3D, shape.vertices, shape.normals, shape.indices);
 		loadGeometryArrays(program, shape);
 		render(program, shape, GL_TRIANGLES);
 	}
@@ -285,6 +285,7 @@ void renderRooms(Geometry shape, GLuint program)
 	fg.getEdges(shape.vertices);
 	loadGeometryArrays(program, shape);
 	render(program, shape, GL_LINES);
+
 	glDisable(GL_DEPTH_TEST);
 	fg.getRoomsOutlines(shape.vertices, shape.indices);
 	loadGeometryArrays(program, shape);
@@ -294,6 +295,7 @@ void renderRooms(Geometry shape, GLuint program)
 	shape.normals.clear();
 	shape.indices.clear();
 
+	glEnable(GL_DEPTH_TEST);
 	fg.getRoomsPos(shape.vertices);
 	loadGeometryArrays(program, shape);
 	render(program, shape, GL_POINTS);
@@ -311,10 +313,18 @@ void renderRooms(Geometry shape, GLuint program)
 	shape.normals.clear();
 	shape.indices.clear();
 
-	loadColor(vec4(0,0.5f,1,1), program);
-	fg.getHouseOutline(shape.vertices);
-	loadGeometryArrays(program, shape);
-	render(program, shape, GL_LINE_STRIP);
+	if(!isExpanding){
+		loadColor(vec4(0,0.5f,1,1), program);
+		fg.getHouseOutline(is3D, shape.vertices, shape.normals, shape.indices);
+		loadGeometryArrays(program, shape);
+		if (is3D) {
+			setDrawingMode(1, program);
+			render(program, shape, GL_TRIANGLES);
+		} else {
+			setDrawingMode(0, program);
+			render(program, shape, GL_LINE_STRIP);
+		}
+	}
 }
 //**************************************************************************************\\
 
@@ -795,12 +805,21 @@ int cursorSelectNode(GLFWwindow *window)
 
 void checkToggleWalls() {
 	if (selectedRoom > -1) {
-			Room* room = fg.graph[selectedRoom];
-	
-			room->renderWall[0] = upToggle;
-			room->renderWall[1] = leftToggle;
-			room->renderWall[2] = downToggle;
-			room->renderWall[3] = rightToggle;
+		Room* room = fg.graph[selectedRoom];
+		if (room->type == 1) {
+			if (!upToggle || !leftToggle || !downToggle || !rightToggle) {
+				cout << "Cannot delete walls from private rooms." << endl;
+				upToggle = true;
+				leftToggle = true;
+				rightToggle = true;
+				downToggle = true;
+			}
+		}
+
+		room->renderWall[0] = upToggle;
+		room->renderWall[1] = leftToggle;
+		room->renderWall[2] = downToggle;
+		room->renderWall[3] = rightToggle;
 	}
 }
 
