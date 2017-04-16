@@ -9,27 +9,31 @@ class FloorGraph
 {
 public:
   vector<Room*> graph;
+  vector<vec2> doors;
 
   FloorGraph();
 
-  void expandRooms();
-  void setRoomsPos();
-  void getRoomsPos(vector<vec3> &input);
   void addPublicRooms();
   void addOtherRooms( int probability, int randomness,
                       int type, float size, int numRooms,
                       vector<Room*> extantRooms);
   void concatenateRooms(vector <Room*> newRooms);
+
+  void expandRooms();
+  void setRoomsPos();
+  void getRoomsPos(vector<vec3> &input);
   void setRoomsFloors(bool is3D);
   void getRoomsOutlines(vector<vec3> &vertices, vector<uint> &indices);
   void getEdges(vector<vec3> &vertices);
+  void setDoors();
+  void getDoors(vector<vec3> &vertices);
 };
 
 FloorGraph::FloorGraph()
 {
 	addPublicRooms();
 	addOtherRooms(15, 60, 1, 5.5f, 2, graph);	//add Private Rooms
-	addOtherRooms(5, 35, 2, 2.5f, 1, graph);//add Extra Rooms
+	addOtherRooms(5, 35, 2, 2.5f, 1, graph);	//add Extra Rooms
 
 	queue<int> queue;
 
@@ -112,6 +116,7 @@ void FloorGraph::concatenateRooms(vector<Room*> newRooms)
 
 void FloorGraph::getEdges(vector<vec3> &vertices)
 {
+	vertices.clear();
   for (Room* room : graph) {
     for (Room* neib : room->neighbours) {
       if (room->index < neib->index) {
@@ -142,6 +147,49 @@ void FloorGraph::getRoomsOutlines(vector<vec3> &vertices, vector<uint> &indices)
 
     count+=4;
   }
+}
+
+void FloorGraph::setRoomsFloors(bool is3D)
+{
+  for(Room* room : graph)
+    room->setRoomGeometry(is3D);
+}
+
+void FloorGraph::getRoomsPos(vector<vec3> &vertices)
+{
+	vertices.clear();
+	for (Room* room : graph) {
+		vertices.push_back(vec3(room->basePos.x, -10.f, room->basePos.y));
+	}
+}
+
+void FloorGraph::setDoors() {
+	doors.clear();
+	queue<int> queue;
+
+	Room* room = graph[0];
+	for (Room* neib : room->neighbours) {
+		queue.push(neib->index);
+	}
+
+	while (queue.size() > 0) {
+		room = graph[queue.front()];
+		queue.pop();
+
+		doors.push_back(room->getDoorPos());
+
+		for (Room* neib : room->neighbours) {
+			if (room->index < neib->index)
+				queue.push(neib->index);
+		}
+	}
+}
+
+void FloorGraph::getDoors(vector<vec3> &vertices) {
+	vertices.clear();
+	for (vec2 pos : doors) {
+		vertices.push_back(vec3(pos.x, -10.f, pos.y));
+	}
 }
 
 void FloorGraph::expandRooms()
@@ -323,45 +371,4 @@ void FloorGraph::setRoomsPos()
 			room->downExpand -= 0.001f;
 		}
 	}
-}
-
-void FloorGraph::setRoomsFloors(bool is3D)
-{
-  for(Room* room : graph)
-  {
-
-    room->setRoomGeometry(is3D);
-  /*  vec2 diagonal = room->downLeftPos - room->upRightPos;
-    vertices.push_back(vec3(room->upRightPos+vec2(diagonal.x,0),-10.f));
-    vertices.push_back(vec3(room->downLeftPos-vec2(diagonal.y,0), -10.f));*/
-    /*room->vertices.clear();
-    room->normals.clear();
-    room->indices.clear();
-
-    room->vertices.push_back(vec3(room->upRightPos.x, -10.f, room->upRight
-    Pos.y));
-    room->vertices.push_back(vec3(room->downLeftPos.x, -10.f, room->upRightPos.y));
-    room->vertices.push_back(vec3(room->downLeftPos.x, -10.f, room->downLeftPos.y));
-    room->vertices.push_back(vec3(room->upRightPos.x, -10.f, room->downLeftPos.y));
-
-    for(uint i=0; i<3; i++)
-      room->indices.push_back(i);
-
-    for(uint i=0; i<3; i++)
-      room->indices.push_back((i+2)%4);
-
-    vec3 normal = -normalize(
-      cross(room->vertices[1]-room->vertices[0],
-            room->vertices[2]-room->vertices[1]));
-
-    for(uint i=0; i<4; i++)
-      room->normals.push_back(normal);*/
-  }
-}
-
-void FloorGraph::getRoomsPos(vector<vec3> &input)
-{
-  for (Room* room : graph) {
-    input.push_back(vec3(room->basePos.x, -10.f, room->basePos.y));
-  }
 }

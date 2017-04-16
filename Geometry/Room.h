@@ -33,10 +33,33 @@ public:
 
     vector<Room*> createRooms(int type, float size, int baseIndex, int maxNumRooms);
     float area();
-
     void getGeometry(vector<vec3> &verts, vector<vec3> &norms, vector<uint> &indexes);
     void setRoomGeometry(bool is3D);
+    vec2 getDoorPos();
 };
+
+vector<Room*> Room::createRooms(int type, float size, int baseIndex, int maxNumRooms)
+{
+    int numNewRooms = rand() % maxNumRooms + 1;
+
+    vector<Room*> addedRooms;
+
+    for(int i = 0; i < numNewRooms; i++)
+    {
+        Room *newRoom = new Room(type, size, baseIndex + i);
+        newRoom->neighbours.push_back(this);
+        newRoom->parent = this;
+        neighbours.push_back(newRoom);
+        addedRooms.push_back(newRoom);
+    }
+    return addedRooms;
+}
+
+float Room::area() {
+    float xLength = upRightPos.x - downLeftPos.x;
+    float yLength = upRightPos.y - downLeftPos.y;
+    return (xLength * yLength);
+}
 
 void createHPlane(vector<vec3> &vertices, vector<vec3> &normals, vector<uint> &indices, vec3 corner1, vec3 corner3)
 {
@@ -196,25 +219,87 @@ void Room::setRoomGeometry(bool is3D)
   }
 }
 
-vector<Room*> Room::createRooms(int type, float size, int baseIndex, int maxNumRooms)
-{
-    int numNewRooms = rand() % maxNumRooms + 1;
-
-    vector<Room*> addedRooms;
-
-    for(int i = 0; i < numNewRooms; i++)
-    {
-        Room *newRoom = new Room(type, size, baseIndex + i);
-        newRoom->neighbours.push_back(this);
-        newRoom->parent = this;
-        neighbours.push_back(newRoom);
-        addedRooms.push_back(newRoom);
+void getWallByQuadrant(Room* room, vec2& wallVector, vec2& wallStartPos, vec2& edgeVector) {
+    vec2 displacement = wallStartPos - room->basePos;
+    if (abs(normalize(displacement).y) > abs(normalize(edgeVector).y)) {
+      wallVector = vec2(0.f, displacement.y);
+    } else {
+      wallVector = vec2(displacement.x, 0.f);
     }
-    return addedRooms;
 }
 
-float Room::area() {
-    float xLength = upRightPos.x - downLeftPos.x;
-    float yLength = upRightPos.y - downLeftPos.y;
-    return (xLength * yLength);
+vec2 intersectingPoint(vec2 vec1Pos, vec2 vec1Dir, vec2 vec2Pos, vec2 vec2Dir) {
+  /*
+  vec1Pos + t*vec1Dir = vec2Pos + s*vec2Dir
+  t*vec1Dir - s*vec2Dir = vec2Pos - vec1Pos
+
+  t*(vec1Dir.x) - s*(vec2Dir.x) = vec2Pos.x - vec1Pos.x
+  t*(vec1Dir.y) - s*(vec2Dir.y) = vec2Pos.y - vec1Pos.y
+
+  For vec2Dir, either x or y is 0
+
+  So, either
+      t*(vec1Dir.x) = vec2Pos.x - vec1Pos.x
+      t*(vec1Dir.y) - s*(vec2Dir.y) = vec2Pos.y - vec1Pos.y
+  Or
+      t*(vec1Dir.x) - s*(vec2Dir.x) = vec2Pos.x - vec1Pos.x
+      t*(vec1Dir.y) = vec2Pos.y - vec1Pos.y
+  */
+  float t = 0.f;
+  float s = 0.f;
+  if (vec2Dir.x == 0) {
+    t = (vec2Pos.x - vec1Pos.x) / vec1Dir.x;
+    /*
+      t*(vec1Dir.y) - s*(vec2Dir.y) = vec2Pos.y - vec1Pos.y
+      s*(vec2Dir.y) = t*(vec1Dir.y) - (vec2Pos.y - vec1Pos.y)
+    */
+    s = (t*(vec1Dir.y) - (vec2Pos.y - vec1Pos.y)) / vec2Dir.y;
+  } else if (vec2Dir.y == 0) {
+    t = (vec2Pos.y - vec1Pos.y) / vec1Dir.y;  
+    /*
+      t*(vec1Dir.x) - s*(vec2Dir.x) = vec2Pos.x - vec1Pos.x
+      s*(vec2Dir.x) = t*(vec1Dir.x) - (vec2Pos.x - vec1Pos.x)
+    */
+    s = (t*(vec1Dir.x) - (vec2Pos.x - vec1Pos.x)) / vec2Dir.x;
+  }
+
+  return (vec2Pos + s*vec2Dir);
+}
+
+vec2 Room::getDoorPos() {
+  // door is placed at the intersection between the edge of the graph and the wall of this room
+  if (index == 0) {
+    return vec2(0.f, 0.f);
+  } else {
+    vec2 edgeVector = parent->basePos - basePos;
+    vec2 edgeStartPos = basePos;
+    vec2 wallVector;
+    vec2 wallStartPos;
+
+    /* first quadrant, top right */
+    if (edgeVector.x >= 0.f && edgeVector.y >= 0.f) {
+      wallStartPos = upRightPos;
+      getWallByQuadrant(this, wallVector, wallStartPos, edgeVector);
+    }
+
+    /* second quadrant, top left */
+    else if (edgeVector.x < 0.f && edgeVector.y >= 0.f) {
+      wallStartPos = vec2(downLeftPos.x, upRightPos.y);
+      getWallByQuadrant(this, wallVector, wallStartPos, edgeVector);
+    }
+
+    /* third quadrant, bottom left */
+    else if (edgeVector.x <= 0.f && edgeVector.y < 0.f) {
+      wallStartPos = downLeftPos;
+      getWallByQuadrant(this, wallVector, wallStartPos, edgeVector);
+    }
+
+    /* fourth quadrant, bottom right */
+    else if (edgeVector.x > 0.f && edgeVector.y < 0.f) {
+      wallStartPos = vec2(upRightPos.x, downLeftPos.y);
+      getWallByQuadrant(this, wallVector, wallStartPos, edgeVector);
+    }
+
+    return (intersectingPoint(edgeStartPos, edgeVector, wallStartPos, wallVector));
+  }
 }

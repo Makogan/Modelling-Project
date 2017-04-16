@@ -91,10 +91,12 @@ bool aPressed = false;
 bool dPressed = false;
 bool qPressed = false;
 bool ePressed = false;
-bool kp2Pressed = false;
-bool kp4Pressed = false;
-bool kp6Pressed = false;
-bool kp8Pressed = false;
+
+bool arrowUpPressed = false;
+bool arrowLeftPressed = false;
+bool arrowDownPressed = false;
+bool arrowRightPressed = false;
+
 bool kpAddPressed = false;
 bool kpSubtPressed = false;
 bool kpMultPressed = false;
@@ -213,6 +215,7 @@ int main(int argc, char **argv)
 			return 1;
 
 		if (isExpanding) fg.expandRooms();
+		if (isExpanding) fg.setDoors();
 		renderRooms(shapes[0], programs[0]);
 
 		GLenum status = openGLerror();
@@ -249,7 +252,7 @@ int main(int argc, char **argv)
 //========================================================================================
 void renderRooms(Geometry shape, GLuint program)
 {
-	glClearColor(0, 0.f, 0.f, 1.0f);
+	glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glEnable(GL_DEPTH_TEST);
 	fg.setRoomsFloors(is3D);
@@ -289,8 +292,17 @@ void renderRooms(Geometry shape, GLuint program)
 	shape.vertices.clear();
 	shape.normals.clear();
 	shape.indices.clear();
-	setDrawingMode(0, program);
+
 	fg.getRoomsPos(shape.vertices);
+	loadGeometryArrays(program, shape);
+	render(program, shape, GL_POINTS);
+
+	shape.vertices.clear();
+	shape.normals.clear();
+	shape.indices.clear();
+
+	loadColor(vec4(1,1,1,1), program);
+	fg.getDoors(shape.vertices);
 	loadGeometryArrays(program, shape);
 	render(program, shape, GL_POINTS);
 }
@@ -790,10 +802,10 @@ void moveCamera() {
 	if (qPressed) cam.position += cam.up*CAM_SPEED;
 	if (ePressed) cam.position -= cam.up*CAM_SPEED;
 
-    if(kp6Pressed) cam.turnH(radians(-1.f));
-    if(kp4Pressed) cam.turnH(radians(1.f));
-    if(kp8Pressed) cam.turnV(radians(1.f));
-    if(kp2Pressed) cam.turnV(radians(-1.f));
+    if(arrowRightPressed) cam.turnH(radians(-1.f));
+    if(arrowLeftPressed) cam.turnH(radians(1.f));
+    if(arrowUpPressed) cam.turnV(radians(1.f));
+    if(arrowDownPressed) cam.turnV(radians(-1.f));
     
     if(kpAddPressed) cam.incline(radians(1.f));
     if(kpSubtPressed) cam.incline(radians(-1.f));
@@ -905,14 +917,14 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
     	qPressed = !qPressed;
     else if(key == GLFW_KEY_E && (action == GLFW_PRESS || action == GLFW_RELEASE))
     	ePressed = !ePressed;
-    else if(key == GLFW_KEY_KP_6 && (action == GLFW_PRESS || action == GLFW_RELEASE))
-    	kp6Pressed = !kp6Pressed;
-    else if(key == GLFW_KEY_KP_4 && (action == GLFW_PRESS || action == GLFW_RELEASE))
-    	kp4Pressed = !kp4Pressed;
-    else if(key == GLFW_KEY_KP_8 && (action == GLFW_PRESS || action == GLFW_RELEASE))
-    	kp8Pressed = !kp8Pressed;
-    else if(key == GLFW_KEY_KP_2 && (action == GLFW_PRESS || action == GLFW_RELEASE))
-    	kp2Pressed = !kp2Pressed;
+    else if(key == GLFW_KEY_RIGHT && (action == GLFW_PRESS || action == GLFW_RELEASE))
+    	arrowRightPressed = !arrowRightPressed;
+    else if(key == GLFW_KEY_LEFT && (action == GLFW_PRESS || action == GLFW_RELEASE))
+    	arrowLeftPressed = !arrowLeftPressed;
+    else if(key == GLFW_KEY_UP && (action == GLFW_PRESS || action == GLFW_RELEASE))
+    	arrowUpPressed = !arrowUpPressed;
+    else if(key == GLFW_KEY_DOWN && (action == GLFW_PRESS || action == GLFW_RELEASE))
+    	arrowDownPressed = !arrowDownPressed;
     else if(key == GLFW_KEY_KP_ADD && (action == GLFW_PRESS || action == GLFW_RELEASE))
     	kpAddPressed = !kpAddPressed;
     else if(key == GLFW_KEY_KP_SUBTRACT && (action == GLFW_PRESS || action == GLFW_RELEASE))
