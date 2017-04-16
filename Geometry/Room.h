@@ -58,9 +58,7 @@ void createHPlane(vector<vec3> &vertices, vector<vec3> &normals, vector<uint> &i
   for(uint i=0; i<3; i++)
     indices.push_back((i+2)%4);
 
-  vec3 normal = -normalize(
-    cross(vertices[1]-vertices[0],
-          vertices[2]-vertices[1]));
+  vec3 normal = vec3(0,1,0);
 
   for(uint i=0; i<4; i++)
     normals.push_back(normal);
@@ -116,7 +114,7 @@ void createPrism(vector<vec3> &vertices, vector<vec3> &normals, vector<uint> &in
   }
 
   for(vec3 normal:norms)
-    normals.push_back(-normal);
+    normals.push_back(normal);
 
   uint offset = verts.size();
   for(uint i: indexes)
@@ -161,7 +159,7 @@ void Room::setRoomGeometry()
   vec3 corner3 = vec3(downLeftPos.x, -10, downLeftPos.y);
 
   vec3 hProj = corner1-corner3;
-  hProj.y = 0;
+  hProj.z = 0;
   vec3 corner2 = corner1-hProj;
   vec3 corner4 = corner3+hProj;
 
@@ -176,14 +174,21 @@ void Room::setRoomGeometry()
 
   for(uint i=0; i<4; i++)
   {
-    vector<vec3> prismBase;
-    prismBase.push_back(corners[i]);
-    prismBase.push_back(corners[(i+1)%corners.size()]);
+    vector<vec3> verts, norms;
+    vector<uint> indexes;
 
-    //vec3 offset =  corners[(i+2)%corners.size()] - corners[(i+1)%corners.size()];
+    vec3 offset =  corners[(i+2)%corners.size()] - corners[(i+1)%corners.size()];
+    vec3 wallCorner = (corners[(i+1)%corners.size()]+normalize(offset)*wallThickness);
+    createPrism(verts, norms, indexes, corners[i], wallCorner+normalize(offset)*wallThickness, -1);
+
+    uint iOffset = vertices.size();
+    for(uint i: indexes)
+      indices.push_back(i+iOffset);
+
+    vertices.insert( vertices.end(), verts.begin(), verts.end());
+    normals.insert(normals.end(), norms.begin(), norms.end());
+
   }
-
-
 }
 
 vector<Room*> Room::createRooms(int type, float size, int baseIndex, int maxNumRooms)
