@@ -20,7 +20,7 @@ public:
                       int type, float size, int numRooms,
                       vector<Room*> extantRooms);
   void concatenateRooms(vector <Room*> newRooms);
-  void setRoomsFloors();
+  void setRoomsFloors(bool is3D);
   void getRoomsOutlines(vector<vec3> &vertices, vector<uint> &indices);
   void getEdges(vector<vec3> &vertices);
 };
@@ -325,12 +325,12 @@ void FloorGraph::setRoomsPos()
 	}
 }
 
-void FloorGraph::setRoomsFloors()
+void FloorGraph::setRoomsFloors(bool is3D)
 {
   for(Room* room : graph)
   {
 
-    room->setRoomGeometry();
+    room->setRoomGeometry(is3D);
   /*  vec2 diagonal = room->downLeftPos - room->upRightPos;
     vertices.push_back(vec3(room->upRightPos+vec2(diagonal.x,0),-10.f));
     vertices.push_back(vec3(room->downLeftPos-vec2(diagonal.y,0), -10.f));*/

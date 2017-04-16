@@ -23,9 +23,11 @@ public:
     vec2 downLeftPos;
 
     float upExpand = 0.005f;
-    float rightExpand = 0.005f;
-    float downExpand = 0.005f;
     float leftExpand = 0.005f;
+    float downExpand = 0.005f;
+    float rightExpand = 0.005f;
+
+    bool renderWall[4] = {true, true, true, true}; //up, left, down, right (in CCW order)
 
     Room(int _type, float _size, int _index):type(_type), size(_size), index(_index){}
 
@@ -33,7 +35,7 @@ public:
     float area();
 
     void getGeometry(vector<vec3> &verts, vector<vec3> &norms, vector<uint> &indexes);
-    void setRoomGeometry();
+    void setRoomGeometry(bool is3D);
 };
 
 void createHPlane(vector<vec3> &vertices, vector<vec3> &normals, vector<uint> &indices, vec3 corner1, vec3 corner3)
@@ -153,13 +155,13 @@ void Room::getGeometry(vector<vec3> &verts, vector<vec3> &norms, vector<uint> &i
   indexes=indices;
 }
 
-void Room::setRoomGeometry()
+void Room::setRoomGeometry(bool is3D)
 {
-  vec3 corner1 = vec3(upRightPos.x, -10, upRightPos.y);
-  vec3 corner3 = vec3(downLeftPos.x, -10, downLeftPos.y);
+  vec3 corner1 = vec3(upRightPos.x, -10.f, upRightPos.y);
+  vec3 corner3 = vec3(downLeftPos.x, -10.f, downLeftPos.y);
 
   vec3 hProj = corner1-corner3;
-  hProj.z = 0;
+  hProj.z = 0.f;
   vec3 corner2 = corner1-hProj;
   vec3 corner4 = corner3+hProj;
 
@@ -172,22 +174,25 @@ void Room::setRoomGeometry()
 
   createPrism(vertices, normals, indices, corner1, corner3, wallThickness);
 
-  for(uint i=0; i<4; i++)
-  {
-    vector<vec3> verts, norms;
-    vector<uint> indexes;
+  if (is3D) {
+    for(uint i=0; i<4; i++)
+    {
+      if (renderWall[i]) {
+        vector<vec3> verts, norms;
+        vector<uint> indexes;
 
-    vec3 offset =  corners[(i+2)%corners.size()] - corners[(i+1)%corners.size()];
-    vec3 wallCorner = (corners[(i+1)%corners.size()]+normalize(offset)*wallThickness);
-    createPrism(verts, norms, indexes, corners[i], wallCorner+normalize(offset)*wallThickness, -1);
+        vec3 offset =  corners[(i+2)%corners.size()] - corners[(i+1)%corners.size()];
+        vec3 wallCorner = (corners[(i+1)%corners.size()]+normalize(offset)*wallThickness);
+        createPrism(verts, norms, indexes, corners[i], wallCorner+normalize(offset)*wallThickness, -1);
 
-    uint iOffset = vertices.size();
-    for(uint i: indexes)
-      indices.push_back(i+iOffset);
+        uint iOffset = vertices.size();
+        for(uint i: indexes)
+          indices.push_back(i+iOffset);
 
-    vertices.insert( vertices.end(), verts.begin(), verts.end());
-    normals.insert(normals.end(), norms.begin(), norms.end());
-
+        vertices.insert( vertices.end(), verts.begin(), verts.end());
+        normals.insert(normals.end(), norms.begin(), norms.end());
+      }
+    }
   }
 }
 

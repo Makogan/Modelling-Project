@@ -42,6 +42,8 @@
 #include "CustomOperators.h"
 #include "FloorGraph.h"
 
+#define CAM_SPEED 0.05f
+
 using namespace std;
 using namespace glm;
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -82,6 +84,7 @@ struct Geometry
 Camera cam;
 FloorGraph fg;
 
+/* camera movement boolean operators */
 bool wPressed = false;
 bool sPressed = false;
 bool aPressed = false;
@@ -96,6 +99,21 @@ bool kpAddPressed = false;
 bool kpSubtPressed = false;
 bool kpMultPressed = false;
 bool kpDivPressed = false;
+
+/* toggles 3d using right control */
+bool is3D = false;
+
+/* toggles room expansion using space bar */
+bool isExpanding = true;
+
+/* toggles room movement vs. basePos movement using left control */
+bool leftCtrlPressed;
+
+/* used for toggling the rendering of walls. Uses i, j, k, l keys respectively */
+bool upToggle = true;
+bool leftToggle = true;
+bool downToggle = true;
+bool rightToggle = true;
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -136,8 +154,10 @@ GLuint createShadingProgram(GLuint vertexShader, GLuint fragmentShader);
 int loadViewProjMatrix(Camera &c, GLuint &program);
 int loadColor(vec4 color, GLuint program);
 int loadCamera(vec3 cameraPos, GLuint program);
-void moveCamera();
 int openGLerror();
+
+void checkToggleWalls();
+void moveCamera();
 
 double calculateFPS(double prevTime, double currentTime);
 //########################################################################################
@@ -192,7 +212,7 @@ int main(int argc, char **argv)
 		if(loadViewProjMatrix(cam, programs[0])!=0)
 			return 1;
 
-		fg.expandRooms();
+		if (isExpanding) fg.expandRooms();
 		renderRooms(shapes[0], programs[0]);
 
 		GLenum status = openGLerror();
@@ -203,6 +223,7 @@ int main(int argc, char **argv)
 			return 1;
 		}
 
+		checkToggleWalls();
 		moveCamera();
 
 	    glfwPollEvents();
@@ -231,7 +252,7 @@ void renderRooms(Geometry shape, GLuint program)
 	glClearColor(0, 0.f, 0.f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glEnable(GL_DEPTH_TEST);
-	fg.setRoomsFloors();
+	fg.setRoomsFloors(is3D);
 
 	setDrawingMode(1, program);
 	for(Room *r: fg.graph)
@@ -749,6 +770,36 @@ int cursorSelectNode(GLFWwindow *window)
 	else
 		return -1;
 }
+
+void checkToggleWalls() {
+	if (selectedRoom > -1) {
+			Room* room = fg.graph[selectedRoom];
+	
+			room->renderWall[0] = upToggle;
+			room->renderWall[1] = leftToggle;
+			room->renderWall[2] = downToggle;
+			room->renderWall[3] = rightToggle;
+	}
+}
+
+void moveCamera() {
+	if (wPressed) cam.position += cam.forward*CAM_SPEED;
+	if (sPressed) cam.position -= cam.forward*CAM_SPEED;
+	if (dPressed) cam.position += cam.side*CAM_SPEED;
+	if (aPressed) cam.position -= cam.side*CAM_SPEED;
+	if (qPressed) cam.position += cam.up*CAM_SPEED;
+	if (ePressed) cam.position -= cam.up*CAM_SPEED;
+
+    if(kp6Pressed) cam.turnH(radians(-1.f));
+    if(kp4Pressed) cam.turnH(radians(1.f));
+    if(kp8Pressed) cam.turnV(radians(1.f));
+    if(kp2Pressed) cam.turnV(radians(-1.f));
+    
+    if(kpAddPressed) cam.incline(radians(1.f));
+    if(kpSubtPressed) cam.incline(radians(-1.f));
+    if(kpMultPressed) cam.resetView();
+    if(kpDivPressed) cam.resetCamera();
+}
 //########################################################################################
 
 //========================================================================================
@@ -765,7 +816,7 @@ void error_callback(int error, const char* description)
 void cursor_pos_callback(GLFWwindow* window, double xpos, double ypos)
 {
 	int state = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT);
-	if (state == GLFW_PRESS && selectedRoom>-1)
+	if (state == GLFW_PRESS && selectedRoom > -1)
 	{
 		int width, height;
 		glfwGetWindowSize(window, &width, &height);
@@ -788,8 +839,10 @@ void cursor_pos_callback(GLFWwindow* window, double xpos, double ypos)
 
 		if (nodeType == 0) {
 			room->basePos = vec2(pos3d.x, pos3d.z);
-			room->upRightPos = room->basePos + upRightDisp;
-			room->downLeftPos = room->basePos + downLeftDisp;
+			if (!leftCtrlPressed) {
+				room->upRightPos = room->basePos + upRightDisp;
+				room->downLeftPos = room->basePos + downLeftDisp;
+			}
 		} else if (nodeType == 1) {
 			room->upRightPos = vec2(pos3d.x, pos3d.z);
 		} else if (nodeType == 2) {
@@ -801,9 +854,17 @@ void cursor_pos_callback(GLFWwindow* window, double xpos, double ypos)
 void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 {
 	selectedRoom = cursorSelectNode(window);
+
+	if (selectedRoom > -1) {
+		Room* room = fg.graph[selectedRoom];
+
+		upToggle = room->renderWall[0];
+		leftToggle = room->renderWall[1];
+		downToggle = room->renderWall[2];
+		rightToggle = room->renderWall[3];
+	}
 }
 
-#define CAM_SPEED 0.05f
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
@@ -830,69 +891,49 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 
     	glfwMaximizeWindow(window);
     }*/
-
     else if(key == GLFW_KEY_F12 && action == GLFW_PRESS)
     	cout << glfwGetVersionString() << endl;
-
     else if(key == GLFW_KEY_W && (action == GLFW_PRESS || action == GLFW_RELEASE))
     	wPressed = !wPressed;
-
     else if(key == GLFW_KEY_S && (action == GLFW_PRESS || action == GLFW_RELEASE))
     	sPressed = !sPressed;
-
     else if(key == GLFW_KEY_A && (action == GLFW_PRESS || action == GLFW_RELEASE))
     	aPressed = !aPressed;
-
     else if(key == GLFW_KEY_D && (action == GLFW_PRESS || action == GLFW_RELEASE))
     	dPressed = !dPressed;
-
     else if(key == GLFW_KEY_Q && (action == GLFW_PRESS || action == GLFW_RELEASE))
     	qPressed = !qPressed;
-
     else if(key == GLFW_KEY_E && (action == GLFW_PRESS || action == GLFW_RELEASE))
     	ePressed = !ePressed;
-
     else if(key == GLFW_KEY_KP_6 && (action == GLFW_PRESS || action == GLFW_RELEASE))
     	kp6Pressed = !kp6Pressed;
-
     else if(key == GLFW_KEY_KP_4 && (action == GLFW_PRESS || action == GLFW_RELEASE))
     	kp4Pressed = !kp4Pressed;
-
     else if(key == GLFW_KEY_KP_8 && (action == GLFW_PRESS || action == GLFW_RELEASE))
     	kp8Pressed = !kp8Pressed;
-
     else if(key == GLFW_KEY_KP_2 && (action == GLFW_PRESS || action == GLFW_RELEASE))
     	kp2Pressed = !kp2Pressed;
-
     else if(key == GLFW_KEY_KP_ADD && (action == GLFW_PRESS || action == GLFW_RELEASE))
     	kpAddPressed = !kpAddPressed;
-
     else if(key == GLFW_KEY_KP_SUBTRACT && (action == GLFW_PRESS || action == GLFW_RELEASE))
     	kpSubtPressed = !kpSubtPressed;
-
     else if(key == GLFW_KEY_KP_MULTIPLY && (action == GLFW_PRESS || action == GLFW_RELEASE))
     	kpMultPressed = !kpMultPressed;
-
     else if(key == GLFW_KEY_KP_DIVIDE && (action == GLFW_PRESS || action == GLFW_RELEASE))
     	kpDivPressed = !kpDivPressed;
-}
-
-void moveCamera() {
-	if (wPressed) cam.position += cam.forward*CAM_SPEED;
-	if (sPressed) cam.position -= cam.forward*CAM_SPEED;
-	if (dPressed) cam.position += cam.side*CAM_SPEED;
-	if (aPressed) cam.position -= cam.side*CAM_SPEED;
-	if (qPressed) cam.position += cam.up*CAM_SPEED;
-	if (ePressed) cam.position -= cam.up*CAM_SPEED;
-
-    if(kp6Pressed) cam.turnH(radians(-1.f));
-    if(kp4Pressed) cam.turnH(radians(1.f));
-    if(kp8Pressed) cam.turnV(radians(1.f));
-    if(kp2Pressed) cam.turnV(radians(-1.f));
-    
-    if(kpAddPressed) cam.incline(radians(1.f));
-    if(kpSubtPressed) cam.incline(radians(-1.f));
-    if(kpMultPressed) cam.resetView();
-    if(kpDivPressed) cam.resetCamera();
+    else if(key == GLFW_KEY_RIGHT_CONTROL && action == GLFW_PRESS)
+    	is3D = !is3D;
+    else if(key == GLFW_KEY_SPACE && action == GLFW_PRESS)
+    	isExpanding = !isExpanding;
+    else if(key == GLFW_KEY_LEFT_CONTROL && (action == GLFW_PRESS || action == GLFW_RELEASE))
+    	leftCtrlPressed = !leftCtrlPressed;
+    else if(key == GLFW_KEY_I && action == GLFW_PRESS)
+    	upToggle = !upToggle;
+    else if(key == GLFW_KEY_J && action == GLFW_PRESS)
+    	leftToggle = !leftToggle;
+    else if(key == GLFW_KEY_K && action == GLFW_PRESS)
+    	downToggle = !downToggle;
+    else if(key == GLFW_KEY_L && action == GLFW_PRESS)
+    	rightToggle = !rightToggle;
 }
 //########################################################################################
