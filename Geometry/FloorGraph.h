@@ -135,13 +135,6 @@ void FloorGraph::getEdges(vector<vec3> &vertices)
 		queue.pop();
 
 		vertices.push_back((vec3(room->parent->basePos.x, -10.f, room->parent->basePos.y)));
-
-		vec2 roomDoorPos = room->getDoorPos();
-		if (roomDoorPos.x != 0.f || roomDoorPos.y != 0.f) {
-			vertices.push_back((vec3(roomDoorPos.x, -10.f, roomDoorPos.y)));
-			vertices.push_back((vec3(roomDoorPos.x, -10.f, roomDoorPos.y)));
-		}
-
 		vertices.push_back((vec3(room->basePos.x, -10.f, room->basePos.y)));
 
 		for (Room* neib : room->neighbours) {
