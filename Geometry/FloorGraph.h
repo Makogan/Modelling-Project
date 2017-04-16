@@ -10,6 +10,7 @@ class FloorGraph
 public:
   vector<Room*> graph;
   vector<vec2> doors;
+  vector<vec2> houseOutline;
 
   FloorGraph();
 
@@ -27,6 +28,13 @@ public:
   void getEdges(vector<vec3> &vertices);
   void setDoors();
   void getDoors(vector<vec3> &vertices);
+  void setHouseOutline();
+  void getHouseOutline(vector<vec3> &vertices);
+
+  float findLowestPos();
+  float findHighestPos();
+  float findLeftmostPos(float height);
+  float findRightmostPos(float height);
 };
 
 FloorGraph::FloorGraph()
@@ -188,6 +196,80 @@ void FloorGraph::setDoors() {
 void FloorGraph::getDoors(vector<vec3> &vertices) {
 	vertices.clear();
 	for (vec2 pos : doors) {
+		vertices.push_back(vec3(pos.x, -10.f, pos.y));
+	}
+}
+
+float FloorGraph::findLowestPos() {
+	float retVal = 10.f;
+	for (Room* room : graph) {
+		if (room->downLeftPos.y < retVal)
+			retVal = room->downLeftPos.y;
+	}
+	return retVal;
+}
+
+float FloorGraph::findHighestPos() {
+	float retVal = -10.f;
+	for (Room* room : graph) {
+		if (room->upRightPos.y > retVal)
+			retVal = room->upRightPos.y;
+	}
+	return retVal;
+}
+
+float FloorGraph::findLeftmostPos(float height) {
+	float retVal = 10.f;
+	for (Room* room : graph) {
+		if (room->downLeftPos.y <= height && room->upRightPos.y >= height) {
+			if (room->downLeftPos.x < retVal)
+				retVal = room->downLeftPos.x;
+		} else continue;
+	}
+	return retVal;
+}
+
+float FloorGraph::findRightmostPos(float height) {
+	float retVal = -10.f;
+	for (Room* room: graph) {
+		if (room->downLeftPos.y <= height && room->upRightPos.y >= height) {
+			if (room->upRightPos.x > retVal)
+				retVal = room->upRightPos.x;
+		} else continue;
+	}
+	return retVal;
+}
+
+void FloorGraph::setHouseOutline(){
+	houseOutline.clear();
+
+	float start = findLowestPos();
+	float end = findHighestPos();
+	float leftmost = findLeftmostPos(start);
+	float rightmost = findRightmostPos(end);
+
+	for (float i = start; i <= end; i += 0.001f) {
+		houseOutline.push_back(vec2(leftmost, i));
+		while (leftmost == findLeftmostPos(i)) {
+			i += 0.001f;
+		}
+		houseOutline.push_back(vec2(leftmost, i));
+		leftmost = findLeftmostPos(i);
+	}
+	for (float i = end; i >= start; i -= 0.001f) {
+		houseOutline.push_back(vec2(rightmost, i));
+		while (rightmost == findRightmostPos(i)) {
+			i -= 0.001f;
+		}
+		houseOutline.push_back(vec2(rightmost, i));
+		rightmost = findRightmostPos(i);
+	}
+	houseOutline.push_back(houseOutline[0]);
+}
+
+void FloorGraph::getHouseOutline(vector<vec3> &vertices) {
+	vertices.clear();
+	for (vec2 pos : houseOutline) {
 		vertices.push_back(vec3(pos.x, -10.f, pos.y));
 	}
 }

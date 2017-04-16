@@ -215,6 +215,7 @@ int main(int argc, char **argv)
 			return 1;
 
 		if (isExpanding) fg.expandRooms();
+		if (!isExpanding) fg.setHouseOutline();
 		fg.setDoors();
 		renderRooms(shapes[0], programs[0]);
 
@@ -305,6 +306,15 @@ void renderRooms(Geometry shape, GLuint program)
 	fg.getDoors(shape.vertices);
 	loadGeometryArrays(program, shape);
 	render(program, shape, GL_POINTS);
+
+	shape.vertices.clear();
+	shape.normals.clear();
+	shape.indices.clear();
+
+	loadColor(vec4(0,0.5f,1,1), program);
+	fg.getHouseOutline(shape.vertices);
+	loadGeometryArrays(program, shape);
+	render(program, shape, GL_LINE_STRIP);
 }
 //**************************************************************************************\\
 
