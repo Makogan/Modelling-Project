@@ -2,13 +2,13 @@ Ideas
 - textured roof. use that other paper (on hallways) to construct
 - second floor, fits on top of the outline of the first floor (with fewer rooms). also staircases are now necessary
 - furniture being dragged in from UI, integrating obj files
-- an 'outside wall' that is textured differently to inside walls, check by having an outside rectangle bigger than the house that finds the closest parallel wall to its location (also use that rectangle for roof)
 
 Done
 - move basePos without moving room
 - thick, 3d walls with normals on both sides (currently they are only '2D')
 - removable walls, add a boolean for every wall. when a wall is rendered, check the boolean
 - doors are added where the graph intersects with rooms
+- an 'outside wall' that is textured differently to inside walls, check by having an outside rectangle bigger than the house that finds the closest parallel wall to its location (also use that rectangle for roof)
 
 Unnecessary but good coding
 - don't let basePos go outside room's boundaries

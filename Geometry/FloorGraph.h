@@ -123,15 +123,32 @@ void FloorGraph::concatenateRooms(vector<Room*> newRooms)
 
 void FloorGraph::getEdges(vector<vec3> &vertices)
 {
-	vertices.clear();
-  for (Room* room : graph) {
-    for (Room* neib : room->neighbours) {
-      if (room->index < neib->index) {
-        vertices.push_back((vec3(room->basePos.x, -10.f, room->basePos.y)));
-        vertices.push_back((vec3(neib->basePos.x, -10.f, neib->basePos.y)));
-      }
-    }
-  }
+	queue<int> queue;
+
+	Room* room = graph[0];
+	for (Room* neib : room->neighbours) {
+		queue.push(neib->index);
+	}
+
+	while (queue.size() > 0) {
+		room = graph[queue.front()];
+		queue.pop();
+
+		vertices.push_back((vec3(room->parent->basePos.x, -10.f, room->parent->basePos.y)));
+
+		vec2 roomDoorPos = room->getDoorPos();
+		if (roomDoorPos.x != 0.f || roomDoorPos.y != 0.f) {
+			vertices.push_back((vec3(roomDoorPos.x, -10.f, roomDoorPos.y)));
+			vertices.push_back((vec3(roomDoorPos.x, -10.f, roomDoorPos.y)));
+		}
+
+		vertices.push_back((vec3(room->basePos.x, -10.f, room->basePos.y)));
+
+		for (Room* neib : room->neighbours) {
+			if (room->index < neib->index)
+				queue.push(neib->index);
+		}
+	}
 }
 
 void FloorGraph::getRoomsOutlines(vector<vec3> &vertices, vector<uint> &indices)
