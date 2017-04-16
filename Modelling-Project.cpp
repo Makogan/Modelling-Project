@@ -210,11 +210,10 @@ int main(int argc, char **argv)
 //========================================================================================
 void renderRooms(Geometry shape, GLuint program)
 {
-
-	glClearColor(1, 1.f, 1.f, 1.0f);
+	glClearColor(0, 0.f, 0.f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-	fg.setRoomsFloors(shape.vertices, shape.normals, shape.indices);
+	glEnable(GL_DEPTH_TEST);
+	fg.setRoomsFloors();
 
 	setDrawingMode(1, program);
 	for(Room *r: fg.graph)
@@ -243,7 +242,7 @@ void renderRooms(Geometry shape, GLuint program)
 	fg.getEdges(shape.vertices);
 	loadGeometryArrays(program, shape);
 	render(program, shape, GL_LINES);
-
+	glDisable(GL_DEPTH_TEST);
 	fg.getRoomsOutlines(shape.vertices, shape.indices);
 	loadGeometryArrays(program, shape);
 	render(program, shape, GL_LINES);

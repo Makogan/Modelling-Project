@@ -20,7 +20,7 @@ public:
                       int type, float size, int numRooms,
                       vector<Room*> extantRooms);
   void concatenateRooms(vector <Room*> newRooms);
-  void setRoomsFloors(vector<vec3> &vertices, vector<vec3> &normals, vector<uint> &indices);
+  void setRoomsFloors();
   void getRoomsOutlines(vector<vec3> &vertices, vector<uint> &indices);
   void getEdges(vector<vec3> &vertices);
 };
@@ -29,7 +29,7 @@ FloorGraph::FloorGraph()
 {
 	addPublicRooms();
 	addOtherRooms(15, 60, 1, 5.5f, 2, graph);	//add Private Rooms
-	addOtherRooms(5, 35, 2, 2.5f, 1, graph);		//add Extra Rooms
+	addOtherRooms(5, 35, 2, 2.5f, 1, graph);//add Extra Rooms
 
 	queue<int> queue;
 
@@ -280,19 +280,21 @@ void FloorGraph::setRoomsPos()
 	}
 }
 
-void FloorGraph::setRoomsFloors(vector<vec3> &vertices, vector<vec3> &normals, vector<uint> &indices)
+void FloorGraph::setRoomsFloors()
 {
   for(Room* room : graph)
   {
+
+    room->setRoomGeometry();
   /*  vec2 diagonal = room->downLeftPos - room->upRightPos;
     vertices.push_back(vec3(room->upRightPos+vec2(diagonal.x,0),-10.f));
     vertices.push_back(vec3(room->downLeftPos-vec2(diagonal.y,0), -10.f));*/
-    room->vertices.clear();
+    /*room->vertices.clear();
     room->normals.clear();
     room->indices.clear();
 
-    /* triangle 1 */
-    room->vertices.push_back(vec3(room->upRightPos.x, -10.f, room->upRightPos.y));
+    room->vertices.push_back(vec3(room->upRightPos.x, -10.f, room->upRight
+    Pos.y));
     room->vertices.push_back(vec3(room->downLeftPos.x, -10.f, room->upRightPos.y));
     room->vertices.push_back(vec3(room->downLeftPos.x, -10.f, room->downLeftPos.y));
     room->vertices.push_back(vec3(room->upRightPos.x, -10.f, room->downLeftPos.y));
@@ -308,7 +310,7 @@ void FloorGraph::setRoomsFloors(vector<vec3> &vertices, vector<vec3> &normals, v
             room->vertices[2]-room->vertices[1]));
 
     for(uint i=0; i<4; i++)
-      room->normals.push_back(normal);
+      room->normals.push_back(normal);*/
   }
 }
 

@@ -18,7 +18,7 @@ void main()
   else
   {
     vec3 l = vec3(light-vertexPos);
-  	l = vec3(0,0,1);//normalize(l);
+  	l = normalize(l);
   	vec3 c = vec3(color);
   	vec3 n = vec3(Normal);
     n = normalize(n);
@@ -26,6 +26,6 @@ void main()
   	e = normalize(e);
   	vec3 h = normalize(e+l);
 
-  	outColor = vec4(c*(vec3(0.9)+max(0,dot(n,l))) + vec3(0.1)*max(0,pow(dot(h,n), 10)), 1);
+  	outColor = vec4(c*(vec3(0.1)+0.5*max(0,dot(n,l))) + vec3(0.1)*max(0,pow(dot(h,n), 100)), 1);
   }
 }
