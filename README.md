@@ -20,7 +20,7 @@ Assume that at the start of the program, the top of the screen is North.
 
 Martin's algorithm uses a method called 'expansion,' the process of which is visible in our program. At first, rooms are only a point. From there, they start expanding until they encounter other rooms, at which point they stop. If no rooms are encountered, the room will keep growing until its maximum area is reached, after which it stops by itself.
 
-Expansion is always taking place, so that the slightest bare space in the rooms will cause the rooms to start expanding again, as much as they can. This is very useful in scaling operations, where making a room very small in a new space can cause it to 'snuggle' up to the edges of the space instead of being manually scaled to that space. If this is not desired, it is possible to toggle off the expansion as required. We recommend this for smaller scaling and movement operations. Toggling off expansion shows the perimeter of the house; a kind of 'outer wall' to wrap the rooms inside.
+Expansion is always taking place, so that the slightest space between the rooms will cause the rooms to start expanding again, as much as they can. This is very useful in scaling the rooms, as making a room very small in a new space can cause it to 'snuggle' up to the edges of the space instead of needing to be manually scaled to that space. If this is not desired, it is possible to toggle off the expansion. We recommend this for smaller scaling and movement operations. Toggling off expansion shows the perimeter of the house; a kind of 'outer wall' to wrap the rooms inside.
 
 __Space Bar__: toggle expansion and perimeter display
 
