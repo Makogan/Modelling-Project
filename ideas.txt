@@ -1,0 +1,12 @@
+- textured roof. use that other paper (on hallways) to construct
+- second floor, fits on top of the outline of the first floor (with fewer rooms). also staircases are now necessary
+- furniture being dragged in from UI, integrating obj files
+- doors are added where the graph intersects with rooms
+- removable walls, add a boolean for every wall. when a wall is rendered, check the boolean
+- an 'outside wall' that is textured differently to inside walls, check by having an outside rectangle bigger than the house that finds the closest parallel wall to its location (also use that rectangle for roof)
+- a 'roomElementSelected' function that sees what part of a room the user is trying to interact with, if at all
+- thick, 3d walls with normals on both sides (currently they are only '2D')
+- implement new 'hitsARoom' function that finds if some thing is intersecting a room, and if so, which room they hit
+- use line strips / triangle strips for rendering to save GPU rendering time
+- move basePos without moving room
+- don't let basePos go outside room's boundaries
