@@ -12,17 +12,17 @@ public:
 
   FloorGraph();
 
-  void expandRooms();
-  void setRoomsPos();
-  void getRoomsPos(vector<vec3> &input);
   void addPublicRooms();
   void addOtherRooms( int probability, int randomness,
                       int type, float size, int numRooms,
                       vector<Room*> extantRooms);
   void concatenateRooms(vector <Room*> newRooms);
+  void setRoomsPos();
+  void getRoomsPos(vector<vec3> &input);
   void setRoomsFloors();
   void getRoomsOutlines(vector<vec3> &vertices, vector<uint> &indices);
   void getEdges(vector<vec3> &vertices);
+  void expandRooms();
 };
 
 FloorGraph::FloorGraph()

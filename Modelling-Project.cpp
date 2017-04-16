@@ -82,6 +82,21 @@ struct Geometry
 Camera cam;
 FloorGraph fg;
 
+bool wPressed = false;
+bool sPressed = false;
+bool aPressed = false;
+bool dPressed = false;
+bool qPressed = false;
+bool ePressed = false;
+bool kp2Pressed = false;
+bool kp4Pressed = false;
+bool kp6Pressed = false;
+bool kp8Pressed = false;
+bool kpAddPressed = false;
+bool kpSubtPressed = false;
+bool kpMultPressed = false;
+bool kpDivPressed = false;
+
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 //========================================================================================
@@ -121,6 +136,7 @@ GLuint createShadingProgram(GLuint vertexShader, GLuint fragmentShader);
 int loadViewProjMatrix(Camera &c, GLuint &program);
 int loadColor(vec4 color, GLuint program);
 int loadCamera(vec3 cameraPos, GLuint program);
+void moveCamera();
 int openGLerror();
 
 double calculateFPS(double prevTime, double currentTime);
@@ -187,8 +203,10 @@ int main(int argc, char **argv)
 			return 1;
 		}
 
-    glfwPollEvents();
-    glfwSwapBuffers(window);
+		moveCamera();
+
+	    glfwPollEvents();
+	    glfwSwapBuffers(window);
 	}
 	//Cleanup
 	for(Shader s: shaders)
@@ -616,7 +634,7 @@ GLFWwindow* createWindow()
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
 	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-	glfwWindowHint(GLFW_DECORATED, GLFW_TRUE);
+	glfwWindowHint(GLFW_DECORATED, GL_TRUE);
 	GLFWwindow* window = glfwCreateWindow(mode->width, mode->height-40,
 		"OpenGL Template", NULL, NULL);
 	if (!window)
@@ -785,13 +803,13 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 	selectedRoom = cursorSelectNode(window);
 }
 
-#define CAM_SPEED 0.5f
+#define CAM_SPEED 0.05f
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
-        glfwSetWindowShouldClose(window, GLFW_TRUE);
+        glfwSetWindowShouldClose(window, GL_TRUE);
 
-    else if(key == GLFW_KEY_F11 && action == GLFW_PRESS)
+    /*else if(key == GLFW_KEY_F11 && action == GLFW_PRESS)
     {
     	//Get the primary monitor and the monitor attached to the current window
     	const GLFWvidmode* mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
@@ -811,51 +829,70 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
     			//subtract 1 to prevent it from going into full screen mode
 
     	glfwMaximizeWindow(window);
-    }
+    }*/
 
     else if(key == GLFW_KEY_F12 && action == GLFW_PRESS)
     	cout << glfwGetVersionString() << endl;
 
-    else if(key == GLFW_KEY_W)
-    	cam.move(vec3(0,CAM_SPEED,0));
+    else if(key == GLFW_KEY_W && (action == GLFW_PRESS || action == GLFW_RELEASE))
+    	wPressed = !wPressed;
 
-    else if(key == GLFW_KEY_S)
-    	cam.move(vec3(0,-CAM_SPEED,0));
+    else if(key == GLFW_KEY_S && (action == GLFW_PRESS || action == GLFW_RELEASE))
+    	sPressed = !sPressed;
 
-    else if(key == GLFW_KEY_A)
-    	cam.move(vec3(-CAM_SPEED,0,0));
+    else if(key == GLFW_KEY_A && (action == GLFW_PRESS || action == GLFW_RELEASE))
+    	aPressed = !aPressed;
 
-    else if(key == GLFW_KEY_D)
-    	cam.move(vec3(CAM_SPEED,0,0));
+    else if(key == GLFW_KEY_D && (action == GLFW_PRESS || action == GLFW_RELEASE))
+    	dPressed = !dPressed;
 
-    else if(key == GLFW_KEY_Q)
-    	cam.move(vec3(0,0,-CAM_SPEED));
+    else if(key == GLFW_KEY_Q && (action == GLFW_PRESS || action == GLFW_RELEASE))
+    	qPressed = !qPressed;
 
-    else if(key == GLFW_KEY_E)
-    	cam.move(vec3(0,0, CAM_SPEED));
+    else if(key == GLFW_KEY_E && (action == GLFW_PRESS || action == GLFW_RELEASE))
+    	ePressed = !ePressed;
 
-    else if(key == GLFW_KEY_KP_6)
-    	cam.turnH(radians(-1.f));
+    else if(key == GLFW_KEY_KP_6 && (action == GLFW_PRESS || action == GLFW_RELEASE))
+    	kp6Pressed = !kp6Pressed;
 
-    else if(key == GLFW_KEY_KP_4)
-    	cam.turnH(radians(1.f));
+    else if(key == GLFW_KEY_KP_4 && (action == GLFW_PRESS || action == GLFW_RELEASE))
+    	kp4Pressed = !kp4Pressed;
 
-    else if(key == GLFW_KEY_KP_8)
-    	cam.turnV(radians(1.f));
+    else if(key == GLFW_KEY_KP_8 && (action == GLFW_PRESS || action == GLFW_RELEASE))
+    	kp8Pressed = !kp8Pressed;
 
-    else if(key == GLFW_KEY_KP_2)
-    	cam.turnV(radians(-1.f));
+    else if(key == GLFW_KEY_KP_2 && (action == GLFW_PRESS || action == GLFW_RELEASE))
+    	kp2Pressed = !kp2Pressed;
 
-    else if(key == GLFW_KEY_KP_ADD)
-    	cam.incline(radians(1.f));
+    else if(key == GLFW_KEY_KP_ADD && (action == GLFW_PRESS || action == GLFW_RELEASE))
+    	kpAddPressed = !kpAddPressed;
 
-    else if(key == GLFW_KEY_KP_SUBTRACT)
-    	cam.incline(radians(-1.f));
+    else if(key == GLFW_KEY_KP_SUBTRACT && (action == GLFW_PRESS || action == GLFW_RELEASE))
+    	kpSubtPressed = !kpSubtPressed;
 
-    else if(key == GLFW_KEY_KP_MULTIPLY)
-    	cam.resetView();
+    else if(key == GLFW_KEY_KP_MULTIPLY && (action == GLFW_PRESS || action == GLFW_RELEASE))
+    	kpMultPressed = !kpMultPressed;
 
-    else if(key == GLFW_KEY_KP_DIVIDE)
-    	cam.resetCamera();
+    else if(key == GLFW_KEY_KP_DIVIDE && (action == GLFW_PRESS || action == GLFW_RELEASE))
+    	kpDivPressed = !kpDivPressed;
+}
+
+void moveCamera() {
+	if (wPressed) cam.position += cam.forward*CAM_SPEED;
+	if (sPressed) cam.position -= cam.forward*CAM_SPEED;
+	if (dPressed) cam.position += cam.side*CAM_SPEED;
+	if (aPressed) cam.position -= cam.side*CAM_SPEED;
+	if (qPressed) cam.position += cam.up*CAM_SPEED;
+	if (ePressed) cam.position -= cam.up*CAM_SPEED;
+
+    if(kp6Pressed) cam.turnH(radians(-1.f));
+    if(kp4Pressed) cam.turnH(radians(1.f));
+    if(kp8Pressed) cam.turnV(radians(1.f));
+    if(kp2Pressed) cam.turnV(radians(-1.f));
+    
+    if(kpAddPressed) cam.incline(radians(1.f));
+    if(kpSubtPressed) cam.incline(radians(-1.f));
+    if(kpMultPressed) cam.resetView();
+    if(kpDivPressed) cam.resetCamera();
 }
 //########################################################################################

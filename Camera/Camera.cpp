@@ -97,13 +97,13 @@ void Camera::setLookDirection(vec3 v)
 	side = cross(forward, up);
 }
 
-/*
-*	Move the camera by an offset
-*/
-void Camera::move(vec3 v)
-{
-	position += v;
-}
+// /*
+// *	Move the camera by an offset
+// */
+// void Camera::move(vec3 v)
+// {
+// 	position += v;
+// }
 
 /*
 *	Place the camera at specified position
@@ -121,10 +121,13 @@ void Camera::turnH(float angle)
 	mat4 rotation;
 	rotation = rotate(rotation, angle, up);
 	vec4 newForward = vec4(forward, 1);
+	vec4 newUp = vec4(up, 1);
 
 	newForward = rotation*newForward;
+	newUp = rotation*newUp;
 
 	forward = vec3(newForward);
+	up = vec3(newUp);
 	forward = normalize(forward);
 	side = cross(forward, up);
 }

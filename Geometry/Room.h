@@ -9,7 +9,7 @@ class Room
 public:
     int type;   //public = 0, private = 1, extra = 2
     float size;
-    float wallThickness = 0.1;
+    float wallThickness = 0.05;
     int index;
     vector<Room*> neighbours;
     Room* parent;
@@ -180,7 +180,7 @@ void Room::setRoomGeometry()
     prismBase.push_back(corners[i]);
     prismBase.push_back(corners[(i+1)%corners.size()]);
 
-    vec3 offset =  corners[(i+2)%corners.size() - corners[(i+1)%corners.size();
+    vec3 offset =  corners[(i+2)%corners.size()] - corners[(i+1)%corners.size()];
   }
 
 
