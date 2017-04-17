@@ -176,7 +176,7 @@ void fixOverlap(Room *r1, Room *r2)
 	for(uint i=0; i<corners.size(); i++)
 	{
 		corrections.push_back(
-			solveCollision(corners[i], r2->upRightPos.x, r2->downLeftPos.x, 
+			solveCollision(corners[i], r2->upRightPos.x, r2->downLeftPos.x,
 				r2->upRightPos.z, r2->downLeftPos.z));
 	}
 
@@ -186,7 +186,7 @@ void fixOverlap(Room *r1, Room *r2)
 	{
 		hCorrection = signedMin(corrections[i].x, corrections[i+1].x);
 		vCorrection = signedMin(corrections[i].z, corrections[i+1].z);
-	}	
+	}
 
 	if(hCorrection < 0)
 		r1->upRightPos.x+=hCorrection;
@@ -227,12 +227,12 @@ void updateExpansion(Room *r1, Room *r2)
 
 void FloorGraph::expandRooms()
 {
-	for (Room* room1 : graph) 
+	for (Room* room1 : graph)
 	{
 		room1->expand();
 	}
 
-	for (Room* room1 : graph) 
+	for (Room* room1 : graph)
 	{
 		if (room1->area() >= room1->size)
 		{
@@ -256,7 +256,7 @@ void FloorGraph::expandRooms()
 
 }
 
-void FloorGraph::setDoors() 
+void FloorGraph::setDoors()
 {
 	doors.clear();
 	queue<int> queue;
@@ -329,7 +329,7 @@ void FloorGraph::setRoomsPos()
 					float phi = (3.f * M_PI / 2.f);
 					float oldX = papaDirectionVector.x;
 					float oldZ = papaDirectionVector.z;
-					vec3 rotatedVec = vec3((oldX * cos(phi)) - (oldZ * sin(phi)), papaDirectionVector.y, 
+					vec3 rotatedVec = vec3((oldX * cos(phi)) - (oldZ * sin(phi)), papaDirectionVector.y,
 						(oldZ * cos(phi)) + (oldX * sin(phi)));
 					vec3 temp = siblings[0]->basePos;
 					temp.y=0;
@@ -344,7 +344,7 @@ void FloorGraph::setRoomsPos()
 			for (int i = 1; i < int(siblings.size()); i++) {
 				float oldX = siblings[i - 1]->basePos.x - papa->basePos.x;
 				float oldZ = siblings[i - 1]->basePos.z - papa->basePos.z;
-				vec3 rotatedVec = glm::normalize(vec3((oldX * cos(theta)) - (oldZ * sin(theta)), papa->basePos.y, 
+				vec3 rotatedVec = glm::normalize(vec3((oldX * cos(theta)) - (oldZ * sin(theta)), papa->basePos.y,
 					(oldZ * cos(theta)) + (oldX * sin(theta))));
 				vec3 temp = siblings[i]->basePos-papa->basePos;
 				temp.y=0;

@@ -178,6 +178,7 @@ int main(int argc, char **argv)
 			return 1;
 
 		fg.expandRooms();
+		fg.setDoors();
 		renderRooms(shapes[0], programs[0]);
 
 		GLenum status = openGLerror();
@@ -245,11 +246,6 @@ void renderRooms(Geometry shape, GLuint program)
 	loadGeometryArrays(program, shape);
 	render(program, shape, GL_LINES);
 
-	loadColor(vec4(1,1,1,1), program);
-	fg.getDoors(shape.vertices);
-	loadGeometryArrays(program, shape);
-	render(program, shape, GL_POINTS);
-
 	/*fg.getRoomsOutlines(shape.vertices, shape.indices);
 	loadGeometryArrays(program, shape);
 	render(program, shape, GL_LINES);*/
@@ -259,6 +255,11 @@ void renderRooms(Geometry shape, GLuint program)
 	shape.indices.clear();
 	setDrawingMode(0, program);
 	fg.getRoomsPos(shape.vertices);
+	loadGeometryArrays(program, shape);
+	render(program, shape, GL_POINTS);
+
+	loadColor(vec4(1,1,1,1), program);
+	fg.getDoors(shape.vertices);
 	loadGeometryArrays(program, shape);
 	render(program, shape, GL_POINTS);
 }
@@ -771,9 +772,9 @@ void cursor_pos_callback(GLFWwindow* window, double xpos, double ypos)
 			pos = vec3(room->downLeftPos.x, -10.f, room->downLeftPos.y);
 		}*/
 
-		float depth = project(pos, cam.getViewMatrix(), cam.getPerspectiveMatrix(), 
+		float depth = project(pos, cam.getViewMatrix(), cam.getPerspectiveMatrix(),
 			vec4(0.f,0.f,(float)width, (float)height)).z;
-		vec3 pos3d = unProject(vec3(xpos, height-ypos, depth), cam.getViewMatrix(), 
+		vec3 pos3d = unProject(vec3(xpos, height-ypos, depth), cam.getViewMatrix(),
 			cam.getPerspectiveMatrix(), vec4(0.f,0.f,(float)width, (float)height));
 
 		vec3 upRightDisp = room->upRightPos - room->basePos;
