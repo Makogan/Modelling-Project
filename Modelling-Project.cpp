@@ -39,7 +39,7 @@
 #include FT_FREETYPE_H
 
 #include "Camera.h"
-#include "CustomOperators.h"
+//#include "CustomOperators.h"
 #include "FloorGraph.h"
 
 using namespace std;
@@ -115,7 +115,7 @@ void deleteGeometry(Geometry &g);
 GLFWwindow* createWindow();
 
 string loadSourceFile(string &filepath);
-string mat4ToString(mat4 m);
+string mat3ToString(mat3 m);
 
 GLuint createShadingProgram(GLuint vertexShader, GLuint fragmentShader);
 int loadViewProjMatrix(Camera &c, GLuint &program);
@@ -136,6 +136,7 @@ double calculateFPS(double prevTime, double currentTime);
 
 int main(int argc, char **argv)
 {
+
 	srand((time(0)));
 
 	fg = FloorGraph();
@@ -239,13 +240,19 @@ void renderRooms(Geometry shape, GLuint program)
 	loadColor(vec4(0,0,0,1), program);
 	setDrawingMode(0, program);
 
+	glDisable(GL_DEPTH_TEST);
 	fg.getEdges(shape.vertices);
 	loadGeometryArrays(program, shape);
 	render(program, shape, GL_LINES);
-	glDisable(GL_DEPTH_TEST);
-	fg.getRoomsOutlines(shape.vertices, shape.indices);
+
+	loadColor(vec4(1,1,1,1), program);
+	fg.getDoors(shape.vertices);
 	loadGeometryArrays(program, shape);
-	render(program, shape, GL_LINES);
+	render(program, shape, GL_POINTS);
+
+	/*fg.getRoomsOutlines(shape.vertices, shape.indices);
+	loadGeometryArrays(program, shape);
+	render(program, shape, GL_LINES);*/
 
 	shape.vertices.clear();
 	shape.normals.clear();
@@ -560,17 +567,17 @@ int openGLerror()
 /*
 *	Make a string representing the values of a mat4.
 */
-string mat4ToString(mat4 m)
+string mat3ToString(mat3 m)
 {
 	string s = "";
 	s += "\n{";
-	for(int i=0; i<4; i++)
+	for(int i=0; i<3; i++)
 	{
-		for(int j=0; j<4; j++)
+		for(int j=0; j<3; j++)
 		{
 			s += to_string(m[i][j]) + ", ";
 		}
-		if(i!=3)
+		if(i!=2)
 			s += "\n";
 	}
 	s += "}\n";
@@ -692,18 +699,18 @@ int cursorSelectNode(GLFWwindow *window)
 		vec2 v = vec2(xpos, height-ypos);
 
 		/* test if the room's basePos is being selected */
-		pos = vec3(node->basePos.x, -10.f, node->basePos.y);
+		pos = node->basePos;
 		screenPos = project(pos, view, proj, vec4(0.f,0.f,(float)width, (float)height));
 		depth = screenPos.z;
 		projCursor = unProject(vec3(v.x,v.y,depth), view, proj, vec4(0.f,0.f,(float)width, (float)height));
 
-		if(length(projCursor-pos) < 0.5) {
+		if(length(projCursor-pos) < 1) {
 			nodeType = 0;
 			break;
 		}
 
 		/* test if the room's upRightPos is being selected */
-		pos = vec3(node->upRightPos.x, -10.f, node->upRightPos.y);
+		/*pos = (node->upRightPos);
 		screenPos = project(pos, view, proj, vec4(0.f,0.f,(float)width, (float)height));
 		depth = screenPos.z;
 		projCursor = unProject(vec3(v.x,v.y,depth), view, proj, vec4(0.f,0.f,(float)width, (float)height));
@@ -711,10 +718,10 @@ int cursorSelectNode(GLFWwindow *window)
 		if(length(projCursor-pos) < 0.5) {
 			nodeType = 1;
 			break;
-		}
+		}*/
 
 		/* test if the room's downLeftPos is being selected */
-		pos = vec3(node->downLeftPos.x, -10.f, node->downLeftPos.y);
+		/*pos = (node->downLeftPos);
 		screenPos = project(pos, view, proj, vec4(0.f,0.f,(float)width, (float)height));
 		depth = screenPos.z;
 		projCursor = unProject(vec3(v.x,v.y,depth), view, proj, vec4(0.f,0.f,(float)width, (float)height));
@@ -722,7 +729,7 @@ int cursorSelectNode(GLFWwindow *window)
 		if(length(projCursor-pos) < 0.5) {
 			nodeType = 2;
 			break;
-		}
+		}*/
 
 		count++;
 	}
@@ -754,29 +761,33 @@ void cursor_pos_callback(GLFWwindow* window, double xpos, double ypos)
 
 		Room* room = fg.graph[selectedRoom];
 		vec3 pos;
-		if (nodeType == 0) {
-			pos = vec3(room->basePos.x, -10.f, room->basePos.y);
-		} else if (nodeType == 1) {
+		//if (nodeType == 0) {
+			pos = room->basePos;
+			//correct in the future
+			//pos.y=-10;
+		/*} else if (nodeType == 1) {
 			pos = vec3(room->upRightPos.x, -10.f, room->upRightPos.y);
 		} else if (nodeType == 2) {
 			pos = vec3(room->downLeftPos.x, -10.f, room->downLeftPos.y);
-		}
+		}*/
 
-		float depth = project(pos, cam.getViewMatrix(), cam.getPerspectiveMatrix(), vec4(0.f,0.f,(float)width, (float)height)).z;
-		vec3 pos3d = unProject(vec3(xpos, height-ypos, depth), cam.getViewMatrix(), cam.getPerspectiveMatrix(), vec4(0.f,0.f,(float)width, (float)height));
+		float depth = project(pos, cam.getViewMatrix(), cam.getPerspectiveMatrix(), 
+			vec4(0.f,0.f,(float)width, (float)height)).z;
+		vec3 pos3d = unProject(vec3(xpos, height-ypos, depth), cam.getViewMatrix(), 
+			cam.getPerspectiveMatrix(), vec4(0.f,0.f,(float)width, (float)height));
 
-		vec2 upRightDisp = room->upRightPos - room->basePos;
-		vec2 downLeftDisp = room->downLeftPos - room->basePos;
+		vec3 upRightDisp = room->upRightPos - room->basePos;
+		vec3 downLeftDisp = room->downLeftPos - room->basePos;
 
-		if (nodeType == 0) {
-			room->basePos = vec2(pos3d.x, pos3d.z);
-			room->upRightPos = room->basePos + upRightDisp;
-			room->downLeftPos = room->basePos + downLeftDisp;
-		} else if (nodeType == 1) {
+		//if (nodeType == 0) {
+		room->basePos = pos3d;
+		room->upRightPos = room->basePos + upRightDisp;
+		room->downLeftPos = room->basePos + downLeftDisp;
+		/*} else if (nodeType == 1) {
 			room->upRightPos = vec2(pos3d.x, pos3d.z);
 		} else if (nodeType == 2) {
 			room->downLeftPos = vec2(pos3d.x, pos3d.z);
-		}
+		}*/
 	}
 }
 
@@ -812,6 +823,12 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 
     	glfwMaximizeWindow(window);
     }
+
+    else if(key == GLFW_KEY_R && action == GLFW_PRESS)
+   	{
+   		fg = FloorGraph();
+		fg.setRoomsPos();
+   	}
 
     else if(key == GLFW_KEY_F12 && action == GLFW_PRESS)
     	cout << glfwGetVersionString() << endl;
