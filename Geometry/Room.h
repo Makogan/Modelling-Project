@@ -136,23 +136,59 @@ vec3 intersectingPoint(vec3 vec1Pos, vec3 vec1Dir, vec3 vec2Pos, vec3 vec2Dir) {
   t*(vec1Dir.x) - s*(vec2Dir.x) = vec2Pos.x - vec1Pos.x
   t*(vec1Dir.y) - s*(vec2Dir.y) = vec2Pos.y - vec1Pos.y
 
-  For vec2Dir, either x or y is 0
+  if vec1Dir.x or vec1Dir.y = 0 {
+  
+  vec1Pos.x - vec2Pos.x = s * vec2Dir.x
+  vec1Pos.y - vec2Pos.y = s * vec2Dir.y
 
-  So, either
-      t*(vec1Dir.x) = vec2Pos.x - vec1Pos.x
-      t*(vec1Dir.y) - s*(vec2Dir.y) = vec2Pos.y - vec1Pos.y
-  Or
-      t*(vec1Dir.x) - s*(vec2Dir.x) = vec2Pos.x - vec1Pos.x
-      t*(vec1Dir.y) = vec2Pos.y - vec1Pos.y
-  */
-  float t = 0.f;
-  if (vec2Dir.x == 0) {
-    t = (vec2Pos.x - vec1Pos.x) / vec1Dir.x;
-  } else if (vec2Dir.z == 0) {
-    t = (vec2Pos.z - vec1Pos.z) / vec1Dir.z;
   }
 
-  return (vec1Pos + t*vec1Dir);
+  t = (vec2Pos.x - vec1Pos.x + s*(vec2Dir.x)) / vec1Dir.x
+  t = ((vec2Pos.x - vec1Pos.x) / vec1Dir.x) + (s * vec2Dir.x / vec1Dir.x)
+
+  s = (vec2Pos.y - vec1Pos.y + t*(vec1Dir.y)) / vec2Dir.y
+  s = ((vec2Pos.y - vec1Pos.y) / vec2Dir.y) + (t * vec1Dir.y / vec2Dir.y)
+
+  s = term2 + (term1 + (s * vec2Dir.x / vec1Dir.x) * vec1Dir.y / vec2Dir.y)
+  s = term2 + (term1 / vec2Dir.y) + (s * vec2Dir.x / vec1Dir.x * vec1Dir.y / vec2Dir.y)
+
+  s = term2 + (term1 / vec2Dir.y) + (s * term3)
+  s - (s * term3) = term2 + (term1 / vec2Dir.y)
+  s (1 - term3) = term2 + (term1 / vec2Dir.y)
+  s = (term2 + (term1 / vec2Dir.y)) / (1 - term3)
+  */
+  
+  float t = 0.f;
+  float s = 0.f;
+  bool useT;
+
+  if (vec1Dir.x == 0 && vec2Dir.x != 0) {
+    useT = false;
+    s = (vec1Pos.x - vec2Pos.x) / vec2Dir.x;
+  }
+  else if (vec1Dir.z == 0 && vec2Dir.y != 0) {
+    s = (vec1Pos.z - vec2Pos.z) / vec2Dir.z;
+  }
+  else if (vec2Dir.x == 0 && vec1Dir.x != 0) {
+    useT = true;
+    t = (vec2Pos.x - vec1Pos.x) / vec1Dir.x;
+  }
+  else if (vec2Dir.z == 0 && vec1Dir.z != 0) {
+    useT = true;
+    t = (vec2Pos.z - vec1Pos.z) / vec1Dir.z;
+  }
+  else if (vec1Dir.x != 0 && vec2Dir.z != 0 && vec2Dir.z != 0) {
+    useT = false;
+    float term1 = (vec2Pos.x - vec1Pos.x) / vec1Dir.x;
+    float term2 = (vec2Pos.z - vec1Pos.z) / vec2Dir.z;
+    float term3 = (vec2Dir.x / vec1Dir.x) * (vec1Dir.z / vec2Dir.z);
+    s = (term2 + (term1 / vec2Dir.z)) / (1.f - term3);
+  }
+
+  if (useT)
+    return (vec1Pos + t*vec1Dir);
+  else
+    return (vec2Pos + s*vec2Dir);
 }
 
 void Room::setDoorPos() {
@@ -205,9 +241,11 @@ void Room::setDoorPos() {
           return;
     }
 
-    vec3 doorPos = (intersectingPoint(edgeStartPos, edgeVector, wallStartPos, wallVector));
-    doors.push_back(doorPos);
-    parent->doors.push_back(doorPos);
+    if (normalize(abs(edgeVector)) != normalize(abs(wallVector))) {
+      vec3 doorPos = (intersectingPoint(edgeStartPos, edgeVector, wallStartPos, wallVector));
+      doors.push_back(doorPos);
+      parent->doors.push_back(doorPos);
+    }
   }
 }
 

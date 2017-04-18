@@ -31,6 +31,7 @@ public:
   void getHousePerimeter(bool is3D, vector<vec3> &vertices, vector<vec3> &normals, vector<uint> &indices);
   void getGround(bool is3D, vector<vec3> &vertices, vector<vec3> &normals, vector<uint> &indices);
   void getCeiling(vector<vec3> &vertices);
+  void setRoof(vector<vec3> &vertices);
 
   float findLowestPos();
   float findHighestPos();
@@ -263,15 +264,11 @@ void FloorGraph::setPerimeter(vector<vec3> &perimeter, float offset){
 	float leftmost = findLeftmostPos(start);
 	float rightmost = findRightmostPos(end);
 
-	bool goingLeft = true;
 	float newLeftmost = leftmost;
 	float newRightmost = rightmost;
-	float iOffset;
+	float iOffset = -offset;
 
 	for (float i = start; i <= end; i += 0.001f) {
-		if (goingLeft) iOffset = -offset;
-		else iOffset = offset;
-
 		perimeter.push_back(vec3(leftmost - offset, -0.001f, i + iOffset));
 
 		while (leftmost == newLeftmost) {
@@ -279,17 +276,17 @@ void FloorGraph::setPerimeter(vector<vec3> &perimeter, float offset){
 			newLeftmost = findLeftmostPos(i);
 		}
 
-		if (leftmost < newLeftmost) goingLeft = false;
-		else if (leftmost > newLeftmost) goingLeft = true;
+		if (leftmost < newLeftmost) {
+			iOffset = offset;
+		} else {
+			iOffset = -offset;
+		}
 
 		perimeter.push_back(vec3(leftmost - offset, -0.001f, i + iOffset));
 		leftmost = newLeftmost;
 	}
 
 	for (float i = end; i >= start; i -= 0.001f) {
-		if (goingLeft) iOffset = -offset;
-		else iOffset = offset;
-
 		perimeter.push_back(vec3(rightmost + offset, -0.001f, i + iOffset));
 
 		while (rightmost == newRightmost) {
@@ -297,12 +294,19 @@ void FloorGraph::setPerimeter(vector<vec3> &perimeter, float offset){
 			newRightmost = findRightmostPos(i);
 		}
 
-		if (rightmost < newRightmost) goingLeft = false;
-		else goingLeft = true;
+		if (rightmost < newRightmost) {
+			iOffset = offset;
+		} else {
+			iOffset = -offset;
+		}
 
 		perimeter.push_back(vec3(rightmost + offset, -0.001f, i + iOffset));
 		rightmost = newRightmost;
 	}
+
+	perimeter.push_back(perimeter[0]);
+	perimeter.push_back(perimeter[1]);
+
 }
 
 void FloorGraph::getHousePerimeter(bool is3D, vector<vec3> &vertices, vector<vec3> &normals, vector<uint> &indices) {
@@ -507,4 +511,30 @@ void FloorGraph::setRoomsPos()
 		// if (room->type == 2)
 		// 	room->basePos = ((float(room->size) / float(papa->size)) * (room->basePos - papa->basePos)) + papa->basePos;
 	}
+}
+
+void FloorGraph::setRoof(vector<vec3> &vertices) {
+	vector<vec3> roofPerimeter;
+	setPerimeter(roofPerimeter, 0.2f);
+
+	vector<vec3> walls;
+	walls.push_back(normalize(roofPerimeter[0] - roofPerimeter[roofPerimeter.size() - 3]));
+	for (uint i = 1; i < roofPerimeter.size() - 2; i++) {
+		walls.push_back(normalize(roofPerimeter[i] - roofPerimeter[i-1]));
+	}
+
+	vector<vec3> skeletonEdges;
+	for (uint i = 0; i < walls.size(); i++) {
+		skeletonEdges.push_back(normalize(walls[(i + 1) % walls.size()] - walls[i]));
+		vertices.push_back(normalize(walls[(i + 1) % walls.size()] - walls[i]) + roofPerimeter[i]);
+	}
+
+	vector<vec3> intersections;
+	if (abs(skeletonEdges[0]) != abs(skeletonEdges.back()))
+		vertices.push_back(intersectingPoint(roofPerimeter[0], skeletonEdges[0], roofPerimeter[roofPerimeter.size() - 3], skeletonEdges.back()));
+	for (uint i = 1; i < skeletonEdges.size(); i++) {
+		if (abs(skeletonEdges[i]) != abs(skeletonEdges[i-1]))
+			vertices.push_back(intersectingPoint(roofPerimeter[i-1], skeletonEdges[i-1], roofPerimeter[i], skeletonEdges[i]));
+	}
+
 }

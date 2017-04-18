@@ -332,6 +332,17 @@ void renderRooms(Geometry shape, GLuint program)
 	shape.normals.clear();
 	shape.indices.clear();
 
+	if (!isExpanding) {
+		loadColor(vec4(1,0,1,1), program);
+		fg.setRoof(shape.vertices);
+		loadGeometryArrays(program, shape);
+		render(program, shape, GL_POINTS);
+	}
+
+	shape.vertices.clear();
+	shape.normals.clear();
+	shape.indices.clear();
+
 	loadColor(vec4(0,0.5f,1,1), program);
 	if (!isExpanding) {
 		fg.getHousePerimeter(is3D, shape.vertices, shape.normals, shape.indices);
