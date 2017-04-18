@@ -117,6 +117,60 @@ void createPrism(vector<vec3> &vertices, vector<vec3> &normals, vector<uint> &in
   }
 }
 
+void stepFunction(vector<vec3> &vertices, vec3 origin, vec3 destination, float stepHeight)
+{
+	vec3 dir = destination-origin;
+	vec3 hProj = dir;
+	hProj.y = 0;
+
+	float height = destination.y-origin.y;
+	float stepNum = height/stepHeight;
+	float stride = length(hProj)/stepNum;
+	hProj = normalize(hProj)*stride;
+
+
+	vec3 step = origin;
+	while(step.y < destination.y)
+	{
+		vertices.push_back(step);
+		step+=hProj;
+		vertices.push_back(step);
+		step.y+=stepHeight;
+	}
+}
+
+//make sure start is always LOWER than end, the function behaves oddly if start
+//and end are not aligned witht he world axis
+void makeStair(vector<vec3> &vertices, vector<vec3> &normals, vector<uint> &indices, vec3 start, vec3 end, float width, float stepHeight)
+{
+  vertices.clear();
+  normals.clear();
+  indices.clear();
+
+  vector<vec3> steps;
+  stepFunction(steps, start, end, stepHeight);
+
+  vec3 up = steps[2]-steps[1];
+  vec3 forward = steps[1]-steps[0];
+  vec3 side = normalize(cross(forward, up));
+
+  vector<vec3> verts, norms;
+  vector<uint> indexes;
+  for(uint i=0; i<steps.size(); i+=2)
+  {
+    vec3 corner1 = steps[i+1];
+    vec3 corner3 = steps[i] + side*width;
+
+    createPrism(verts, norms, indexes, corner1, corner3, stepHeight);
+
+    for(uint i=0; i<indexes.size(); i++)
+      indices.push_back(indexes[i]+vertices.size());
+
+    vertices.insert(vertices.end(), verts.begin(), verts.end() );
+    normals.insert(normals.end(), norms.begin(), norms.end());
+  }
+}
+
 vec3 intersectingPoint(vec3 vec1Pos, vec3 vec1Dir, vec3 vec2Pos, vec3 vec2Dir)
 {
   /*

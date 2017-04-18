@@ -184,7 +184,6 @@ double calculateFPS(double prevTime, double currentTime);
 
 int main(int argc, char **argv)
 {
-
 	srand((time(0)));
 
 	fg = FloorGraph();
@@ -226,7 +225,17 @@ int main(int argc, char **argv)
 		if(loadViewProjMatrix(cam, programs[0])!=0)
 			return 1;
 
-		fg.expandRooms();
+		glClearColor(0, 0.f, 0.f, 1.0f);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		loadColor(vec4(1,1,1,1), programs[0]);
+		setDrawingMode(0, programs[0]);
+		makeStair(shapes[0].vertices, shapes[0].normals, shapes[0].indices, vec3(0), vec3(-10,10,0),10, 1);
+		//stepFunction(shapes[0].vertices, vec3(0,10,10), vec3(0),1);
+		loadGeometryArrays(programs[0], shapes[0]);
+		render(programs[0], shapes[0], GL_LINES);
+
+
+	/*	fg.expandRooms();
 		fg.setDoors();
 		renderRooms(shapes[0], programs[0]);
 
@@ -236,7 +245,7 @@ int main(int argc, char **argv)
 			cerr << "\nAn error has ocurred.\n"
 				<< "Error number: " << status << "\nTerminating!" << endl;
 			return 1;
-		}
+		}*/
 
     glfwPollEvents();
     glfwSwapBuffers(window);
