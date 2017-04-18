@@ -1,7 +1,11 @@
 Ideas
-- textured roof. use that other paper (on hallways) to construct
+- add roof. use that other paper (on hallways) to construct. expand the perimeter by a small amount so that there's a little overhang
+- texture the walls and the roof
 - second floor, fits on top of the outline of the first floor (with fewer rooms). also staircases are now necessary
 - furniture being dragged in from UI, integrating obj files
+- decrease the amount by which the perimeter algorithm iterates
+- ceiling for the first floor, use the perimeter algorithm
+- add a ground, remove the room's floors
 
 Done
 - move basePos without moving room
