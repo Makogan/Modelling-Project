@@ -92,7 +92,7 @@ void Room::setRoomGeometry(bool is3D)
   {
     if (renderWall[i]) {
       vec3 offset =  corners[(i+2)%corners.size()] - corners[(i+1)%corners.size()];
-      vec3 wallCorner = (corners[(i+1)%corners.size()]+normalize(offset)*wallThickness);
+      vec3 wallCorner = (corners[(i+1)%corners.size()] + normalize(offset)*wallThickness);
 
       if (is3D)
         walls.push_back(new Wall(corners[i], wallCorner+normalize(offset)*wallThickness, -1));
@@ -152,7 +152,7 @@ void intersectingPoint(vec3 line1Pos, vec3 line1Dir, vec3 line2Pos, vec3 line2Di
   float line1Slope = line1Dir.z / line1Dir.x;
   float line2Slope = line2Dir.z / line2Dir.x;
 
-  if (line1Slope == line2Slope)
+  if (abs(line1Slope - line2Slope) < 0.01f)
     return;
 
   float line1Intercept = line1Pos.z - (line1Slope * line1Pos.x);

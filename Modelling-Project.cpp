@@ -221,7 +221,7 @@ int main(int argc, char **argv)
 			return 1;
 
 		if (isExpanding) fg.expandRooms();
-		if (!isExpanding) fg.setPerimeter(fg.housePerimeter, 0.2f);
+		if (!isExpanding) fg.setPerimeter(fg.housePerimeter, 0.02f);
 		fg.setDoors();
 		for (Room* room : fg.graph) {
 			room->setRoomGeometry(is3D);
@@ -332,14 +332,6 @@ void renderRooms(Geometry shape, GLuint program)
 	shape.normals.clear();
 	shape.indices.clear();
 
-	if (!isExpanding) {
-		loadColor(vec4(1,0,1,1), program);
-		setDrawingMode(1, program);
-		fg.setRoof(shape.vertices);
-		loadGeometryArrays(program, shape);
-		render(program, shape, GL_TRIANGLES);
-	}
-
 	shape.vertices.clear();
 	shape.normals.clear();
 	shape.indices.clear();
@@ -364,6 +356,23 @@ void renderRooms(Geometry shape, GLuint program)
 	if (!isExpanding && is3D && drawCeiling) {
 		setDrawingMode(0, program);
 		fg.getCeiling(shape.vertices);
+		loadGeometryArrays(program, shape);
+		render(program, shape, GL_TRIANGLE_FAN);
+
+		shape.vertices.clear();
+		shape.normals.clear();
+		shape.indices.clear();
+
+		setDrawingMode(1, program);
+		fg.setRoof(shape.vertices, shape.normals);
+		loadGeometryArrays(program, shape);
+		render(program, shape, GL_TRIANGLES);
+
+		shape.vertices.clear();
+		shape.normals.clear();
+		shape.indices.clear();
+
+		fg.getRoofTop(shape.vertices);
 		loadGeometryArrays(program, shape);
 		render(program, shape, GL_TRIANGLE_FAN);
 	}
@@ -790,7 +799,7 @@ float projectionOutput(GLFWwindow* window, vec3 pos) {
 	int width, height;
 	glfwGetWindowSize(window, &width, &height);
 
-	vec2 v = vec2(xpos, height-ypos);
+	vec2 v = vec2(xpos, height - ypos - 16);
 
 	vec3 screenPos = project(pos, view, proj, vec4(0.f,0.f,(float)width, (float)height));
 	float depth = screenPos.z;
@@ -806,19 +815,19 @@ int cursorSelectNode(GLFWwindow *window) {
 	for(Room *node : fg.graph) {
 		/* test if the room's basePos is being selected */
 		pos = node->basePos;
-		if (projectionOutput(window, pos) < 0.1) {
+		if (projectionOutput(window, pos) < 0.15) {
 			nodeType = 0;
 			break;
 		}
 		/* test if the room's upRightPos is being selected */
 		pos = node->upRightPos;
-		if (projectionOutput(window, pos) < 0.1) {
+		if (projectionOutput(window, pos) < 0.15) {
 			nodeType = 1;
 			break;
 		}
 		/* test if the room's downLeftPos is being selected */
 		pos = node->downLeftPos;
-		if (projectionOutput(window, pos) < 0.1) {
+		if (projectionOutput(window, pos) < 0.15) {
 			nodeType = 2;
 			break;
 		}
@@ -901,21 +910,21 @@ void cursor_pos_callback(GLFWwindow* window, double xpos, double ypos)
 		}
 
 		float depth = project(pos, cam.getViewMatrix(), cam.getPerspectiveMatrix(), vec4(0.f,0.f,(float)width, (float)height)).z;
-		vec3 pos3d = unProject(vec3(xpos, height-ypos, depth), cam.getViewMatrix(), cam.getPerspectiveMatrix(), vec4(0.f,0.f,(float)width, (float)height));
+		vec3 pos3d = unProject(vec3(xpos, height - ypos - 16, depth), cam.getViewMatrix(), cam.getPerspectiveMatrix(), vec4(0.f,0.f,(float)width, (float)height));
 
 		vec3 upRightDisp = room->upRightPos - room->basePos;
 		vec3 downLeftDisp = room->downLeftPos - room->basePos;
 
 		if (nodeType == 0) {
-			room->basePos = vec3(pos3d.x, 0.f, pos3d.z);
+			room->basePos = vec3(pos3d.x, room->basePos.y, pos3d.z);
 			if (!leftCtrlPressed) {
 				room->upRightPos = room->basePos + upRightDisp;
 				room->downLeftPos = room->basePos + downLeftDisp;
 			}
 		} else if (nodeType == 1) {
-			room->upRightPos = vec3(pos3d.x, 0.f, pos3d.z);;
+			room->upRightPos = vec3(pos3d.x, room->basePos.y, pos3d.z);;
 		} else if (nodeType == 2) {
-			room->downLeftPos = vec3(pos3d.x, 0.f, pos3d.z);;
+			room->downLeftPos = vec3(pos3d.x, room->basePos.y, pos3d.z);;
 		}
 	}
 }

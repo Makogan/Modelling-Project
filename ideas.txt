@@ -1,9 +1,9 @@
 Ideas
-- add roof. use that other paper (on hallways) to construct. expand the perimeter by a small amount so that there's a little overhang
 - texture the walls and the roof
+- make sure doors are on both rooms that they connect
+- set window positions randomly on outside wall and the connecting inside wall
 - second floor, fits on top of the outline of the first floor (with fewer rooms). also staircases are now necessary
 - furniture being dragged in from UI, integrating obj files
-- ceiling for the first floor, use the perimeter algorithm
 
 Done
 - move basePos without moving room
@@ -12,6 +12,8 @@ Done
 - doors are added where the graph intersects with rooms
 - an 'outside wall' that is textured differently to inside walls, check by having an outside rectangle bigger than the house that finds the closest parallel wall to its location (also use that rectangle for roof)
 - change vec2 to vec3
+- add roof. use that other paper (on hallways) to construct. expand the perimeter by a small amount so that there's a little overhang
+- ceiling for the first floor, use the perimeter algorithm
 
 Unnecessary but good coding
 - don't let basePos go outside room's boundaries
