@@ -221,7 +221,7 @@ int main(int argc, char **argv)
 			return 1;
 
 		if (isExpanding) fg.expandRooms();
-		if (!isExpanding) fg.setPerimeter(fg.housePerimeter, 0.02f);
+		if (!isExpanding) fg.setPerimeter(fg.housePerimeter, 0.2f);
 		fg.setDoors();
 		for (Room* room : fg.graph) {
 			room->setRoomGeometry(is3D);
@@ -334,9 +334,10 @@ void renderRooms(Geometry shape, GLuint program)
 
 	if (!isExpanding) {
 		loadColor(vec4(1,0,1,1), program);
+		setDrawingMode(1, program);
 		fg.setRoof(shape.vertices);
 		loadGeometryArrays(program, shape);
-		render(program, shape, GL_POINTS);
+		render(program, shape, GL_TRIANGLES);
 	}
 
 	shape.vertices.clear();

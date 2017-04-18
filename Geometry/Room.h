@@ -128,67 +128,40 @@ void getWallByQuadrant(Room* room, vec3& wallVector, vec3& wallStartPos, vec3& e
     }
 }
 
-vec3 intersectingPoint(vec3 vec1Pos, vec3 vec1Dir, vec3 vec2Pos, vec3 vec2Dir) {
-  /*
-  vec1Pos + t*vec1Dir = vec2Pos + s*vec2Dir
-  t*vec1Dir - s*vec2Dir = vec2Pos - vec1Pos
-
-  t*(vec1Dir.x) - s*(vec2Dir.x) = vec2Pos.x - vec1Pos.x
-  t*(vec1Dir.y) - s*(vec2Dir.y) = vec2Pos.y - vec1Pos.y
-
-  if vec1Dir.x or vec1Dir.y = 0 {
-  
-  vec1Pos.x - vec2Pos.x = s * vec2Dir.x
-  vec1Pos.y - vec2Pos.y = s * vec2Dir.y
-
-  }
-
-  t = (vec2Pos.x - vec1Pos.x + s*(vec2Dir.x)) / vec1Dir.x
-  t = ((vec2Pos.x - vec1Pos.x) / vec1Dir.x) + (s * vec2Dir.x / vec1Dir.x)
-
-  s = (vec2Pos.y - vec1Pos.y + t*(vec1Dir.y)) / vec2Dir.y
-  s = ((vec2Pos.y - vec1Pos.y) / vec2Dir.y) + (t * vec1Dir.y / vec2Dir.y)
-
-  s = term2 + (term1 + (s * vec2Dir.x / vec1Dir.x) * vec1Dir.y / vec2Dir.y)
-  s = term2 + (term1 / vec2Dir.y) + (s * vec2Dir.x / vec1Dir.x * vec1Dir.y / vec2Dir.y)
-
-  s = term2 + (term1 / vec2Dir.y) + (s * term3)
-  s - (s * term3) = term2 + (term1 / vec2Dir.y)
-  s (1 - term3) = term2 + (term1 / vec2Dir.y)
-  s = (term2 + (term1 / vec2Dir.y)) / (1 - term3)
-  */
-  
+void intersectingPoint(vec3 line1Pos, vec3 line1Dir, vec3 line2Pos, vec3 line2Dir, vec3 &outputVec) {
   float t = 0.f;
-  float s = 0.f;
-  bool useT;
+  bool useT = false;
 
-  if (vec1Dir.x == 0 && vec2Dir.x != 0) {
-    useT = false;
-    s = (vec1Pos.x - vec2Pos.x) / vec2Dir.x;
-  }
-  else if (vec1Dir.z == 0 && vec2Dir.y != 0) {
-    s = (vec1Pos.z - vec2Pos.z) / vec2Dir.z;
-  }
-  else if (vec2Dir.x == 0 && vec1Dir.x != 0) {
+  if (line2Dir.x == 0) {
     useT = true;
-    t = (vec2Pos.x - vec1Pos.x) / vec1Dir.x;
+    t = (line2Pos.x - line1Pos.x) / line1Dir.x;
   }
-  else if (vec2Dir.z == 0 && vec1Dir.z != 0) {
+  else if (line2Dir.z == 0) {
     useT = true;
-    t = (vec2Pos.z - vec1Pos.z) / vec1Dir.z;
-  }
-  else if (vec1Dir.x != 0 && vec2Dir.z != 0 && vec2Dir.z != 0) {
-    useT = false;
-    float term1 = (vec2Pos.x - vec1Pos.x) / vec1Dir.x;
-    float term2 = (vec2Pos.z - vec1Pos.z) / vec2Dir.z;
-    float term3 = (vec2Dir.x / vec1Dir.x) * (vec1Dir.z / vec2Dir.z);
-    s = (term2 + (term1 / vec2Dir.z)) / (1.f - term3);
+    t = (line2Pos.z - line1Pos.z) / line1Dir.z;
   }
 
-  if (useT)
-    return (vec1Pos + t*vec1Dir);
-  else
-    return (vec2Pos + s*vec2Dir);
+  if (useT) {
+    outputVec = (line1Pos + t*line1Dir);
+    return;
+  }
+
+  if(line1Dir.x == 0.f || line2Dir.x == 0.f)
+    return;
+
+  float line1Slope = line1Dir.z / line1Dir.x;
+  float line2Slope = line2Dir.z / line2Dir.x;
+
+  if (line1Slope == line2Slope)
+    return;
+
+  float line1Intercept = line1Pos.z - (line1Slope * line1Pos.x);
+  float line2Intercept = line2Pos.z - (line2Slope * line2Pos.x);
+
+  float intsectX = (line2Intercept - line1Intercept) / (line1Slope - line2Slope);
+  float intsectZ = ((line1Slope * line2Intercept) - (line2Slope * line1Intercept)) / (line1Slope - line2Slope);
+
+  outputVec = vec3(intsectX, line1Pos.y, intsectZ);
 }
 
 void Room::setDoorPos() {
@@ -241,8 +214,10 @@ void Room::setDoorPos() {
           return;
     }
 
-    if (normalize(abs(edgeVector)) != normalize(abs(wallVector))) {
-      vec3 doorPos = (intersectingPoint(edgeStartPos, edgeVector, wallStartPos, wallVector));
+
+    vec3 doorPos = vec3(0.f);
+    (intersectingPoint(edgeStartPos, edgeVector, wallStartPos, wallVector, doorPos));
+    if (doorPos != vec3(0.f)) {
       doors.push_back(doorPos);
       parent->doors.push_back(doorPos);
     }

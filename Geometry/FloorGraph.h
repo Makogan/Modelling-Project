@@ -337,7 +337,7 @@ void FloorGraph::getHousePerimeter(bool is3D, vector<vec3> &vertices, vector<vec
 
 void FloorGraph::getCeiling(vector<vec3> &vertices) {
 	vector<vec3> ceilingPerimeter;
-	setPerimeter(ceilingPerimeter, 0.01f);
+	setPerimeter(ceilingPerimeter, 0.2f);
 
 	uint count = 0;
 	int index = -1;
@@ -525,16 +525,87 @@ void FloorGraph::setRoof(vector<vec3> &vertices) {
 
 	vector<vec3> skeletonEdges;
 	for (uint i = 0; i < walls.size(); i++) {
-		skeletonEdges.push_back(normalize(walls[(i + 1) % walls.size()] - walls[i]));
-		vertices.push_back(normalize(walls[(i + 1) % walls.size()] - walls[i]) + roofPerimeter[i]);
+		vec3 dirA = normalize(walls[(i + 1) % walls.size()]);
+		vec3 dirB = normalize(-walls[i]);
+		vec3 dirEdge = normalize(walls[(i + 1) % walls.size()] - walls[i]);
+		
+		float dotProd = dot(dirA, dirEdge);
+		float det = dirA.x * dirEdge.z - dirA.z * dirEdge.x;
+		float angle1 = atan2(det, dotProd) * (180.f / M_PI);
+
+		dotProd = dot(dirB, dirEdge);
+		det = dirB.x * dirEdge.z - dirB.z * dirEdge.x;
+		float angle2 = atan2(dotProd, det) * (180.f / M_PI);
+
+		if (angle1 > 90.f || angle2 > 90.f) {
+			dirEdge = normalize(-1.f * dirEdge);
+		}
+		skeletonEdges.push_back(1.5f * normalize(dirEdge));
 	}
 
 	vector<vec3> intersections;
-	if (abs(skeletonEdges[0]) != abs(skeletonEdges.back()))
-		vertices.push_back(intersectingPoint(roofPerimeter[0], skeletonEdges[0], roofPerimeter[roofPerimeter.size() - 3], skeletonEdges.back()));
+	vector<int> wallIndices;
+	vec3 intsectPoint = vec3(0.f);
+	intersectingPoint(	roofPerimeter[0], skeletonEdges[0],
+						roofPerimeter[roofPerimeter.size() - 3], skeletonEdges.back(), intsectPoint);
+	if (intsectPoint != vec3(0.f) && length(intsectPoint - roofPerimeter[0]) > 1.f) {
+		intersections.push_back(intsectPoint);
+		wallIndices.push_back(0);
+	}
 	for (uint i = 1; i < skeletonEdges.size(); i++) {
-		if (abs(skeletonEdges[i]) != abs(skeletonEdges[i-1]))
-			vertices.push_back(intersectingPoint(roofPerimeter[i-1], skeletonEdges[i-1], roofPerimeter[i], skeletonEdges[i]));
+		intsectPoint = vec3(0.f);
+		intersectingPoint(	roofPerimeter[i-1], skeletonEdges[i-1],
+							roofPerimeter[i], skeletonEdges[i], intsectPoint);
+		if (intsectPoint != vec3(0.f) && length(intsectPoint - roofPerimeter[i]) > 1.f) {
+			intersections.push_back(intsectPoint);
+			wallIndices.push_back(i);
+		}
 	}
 
+	for (uint i = 0; i < roofPerimeter.size(); i++) {
+		roofPerimeter[i] += vec3(0.f, -1.01f, 0.f);
+		intersections.push_back(roofPerimeter[i] + skeletonEdges[i] + vec3(0.f, -2.f, 0.f));
+	}
+
+	int wallCounter = 0;
+
+	for (uint i = 0; i < 2; i++) {
+		vertices.push_back(intersections[i]);
+		vertices.push_back(roofPerimeter[i]);
+		vertices.push_back(roofPerimeter[(i + 1) % intersections.size()]);
+
+		vertices.push_back(intersections[i]);
+		vertices.push_back(intersections[(i + 1) % intersections.size()]);
+		vertices.push_back(roofPerimeter[(i + 1) % intersections.size()]);
+	}
+
+/*
+	vector<vec3> roofPoints;
+	vector<int> roofWallIndices;
+	for (uint i = 1; i < newSkeletonEdges.size(); i++) {
+		intsectPoint = vec3(0.f);
+		intersectingPoint(	intersections[i], newSkeletonEdges[i],
+							intersections[i-1], newSkeletonEdges[i-1], intsectPoint);
+		if (intsectPoint != vec3(0.f) && length(intsectPoint - intersections[i-1]) < 1.f) {
+			roofPoints.push_back(intsectPoint);
+			vertices.push_back(intsectPoint);
+			roofWallIndices.push_back(i);
+		}
+	}
+
+	int perimeterCount = 0;
+	vec3 perimeterPoint = roofPerimeter[perimeterCount];
+	for (uint i = 0; i < intersections.size(); i++) {
+		while (perimeterCount < wallIndices[i]) {
+			vertices.push_back(intersections[i]);
+			
+			vertices.push_back(perimeterPoint);
+			perimeterCount++;
+			
+			perimeterPoint = roofPerimeter[perimeterCount];
+			vertices.push_back(perimeterPoint);
+			perimeterCount++;
+		}
+	}
+*/
 }
