@@ -117,7 +117,7 @@ void createPrism(vector<vec3> &vertices, vector<vec3> &normals, vector<uint> &in
   }
 }
 
-vec3 intersectingPoint(vec3 vec1Pos, vec3 vec1Dir, vec3 vec2Pos, vec3 vec2Dir) 
+vec3 intersectingPoint(vec3 vec1Pos, vec3 vec1Dir, vec3 vec2Pos, vec3 vec2Dir)
 {
   /*
   vec1Pos + t*vec1Dir = vec2Pos + s*vec2Dir
@@ -151,6 +151,7 @@ public:
     vector<vec3> vertices;
     vector<vec3> normals;
     vector<uint> indices;
+    vector<vec2> uvs;
 
     Wall(vec3 corner1, vec3 corner3, float wallThickness);
 };
@@ -170,7 +171,7 @@ public:
     vector<Room*> neighbours;
     Room* parent;
 
-    vector<Wall*> walls; 
+    vector<Wall*> walls;
     vector<vec3> doors;
 
     vec3 basePos;
@@ -195,7 +196,7 @@ public:
     vec3 getDoorPos();
 };
 
-void getWallByQuadrant(Room* room, vec3& wallVector, vec3& wallStartPos, vec3& edgeVector) 
+void getWallByQuadrant(Room* room, vec3& wallVector, vec3& wallStartPos, vec3& edgeVector)
 {
     vec3 displacement = wallStartPos - room->basePos;
     if (abs(normalize(displacement).z) > abs(normalize(edgeVector).z)) {
@@ -209,45 +210,34 @@ vec3 Room::getDoorPos() {
   // door is placed at the intersection between the edge of the graph and the wall of this room
   if (index == 0) {
     return vec3(0.f);
-  } 
-
-  else 
-  {
+  } else {
     vec3 edgeVector = parent->basePos - basePos;
     vec3 edgeStartPos = basePos;
     vec3 wallVector;
     vec3 wallStartPos;
 
-    // first quadrant, top right 
+    /* first quadrant, top right */
     if (edgeVector.x >= 0.f && edgeVector.z >= 0.f) {
       wallStartPos = upRightPos;
       getWallByQuadrant(this, wallVector, wallStartPos, edgeVector);
-      if (wallVector.z == 0.f) 
-          return vec3(0.f);
     }
 
-    // second quadrant, top left 
+    /* second quadrant, top left */
     else if (edgeVector.x < 0.f && edgeVector.z >= 0.f) {
       wallStartPos = vec3(downLeftPos.x, basePos.y, upRightPos.z);
       getWallByQuadrant(this, wallVector, wallStartPos, edgeVector);
-      if (wallVector.x == 0.f) 
-          return vec3(0.f);
     }
 
-    // third quadrant, bottom left 
+    /* third quadrant, bottom left */
     else if (edgeVector.x <= 0.f && edgeVector.z < 0.f) {
       wallStartPos = downLeftPos;
       getWallByQuadrant(this, wallVector, wallStartPos, edgeVector);
-      if (wallVector.z == 0.f) 
-          return vec3(0.f);
     }
 
-    // fourth quadrant, bottom right 
+    /* fourth quadrant, bottom right */
     else if (edgeVector.x > 0.f && edgeVector.z < 0.f) {
       wallStartPos = vec3(upRightPos.x, basePos.y, downLeftPos.z);
       getWallByQuadrant(this, wallVector, wallStartPos, edgeVector);
-      if (wallVector.x == 0.f) 
-          return vec3(0.f);
     }
 
     return (intersectingPoint(edgeStartPos, edgeVector, wallStartPos, wallVector));
@@ -275,7 +265,7 @@ void Room::getGeometry(vector<vec3> &verts, vector<vec3> &norms, vector<uint> &i
     {
       indexes.push_back(w->indices[i]+verts.size());
     }
-    
+
     verts.insert( verts.end(), w->vertices.begin(), w->vertices.end() );
     norms.insert( norms.end(), w->normals.begin(), w->normals.end() );
   }

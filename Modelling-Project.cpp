@@ -37,7 +37,12 @@
 #include <ft2build.h>
 #include <time.h>
 #include FT_FREETYPE_H
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb/stb_image.h>
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include <stb/stb_image_write.h>
 
+#include "ObjParser.h"
 #include "Camera.h"
 //#include "CustomOperators.h"
 #include "FloorGraph.h"
@@ -70,8 +75,51 @@ struct Geometry
 	vector<vec3> vertices;
 	vector<uint> indices;
 	vector<vec3> normals;
+	vector<vec2> uvs;
+};
+
+struct Texture
+{
+	GLuint textureID;
+	GLuint target;
+	int width;
+	int height;
 };
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+bool InitializeTexture(Texture* texture, const char* filename, GLuint target = GL_TEXTURE_2D)
+{
+	int numComponents;
+	stbi_set_flip_vertically_on_load(true);
+	unsigned char *data = stbi_load(filename, &texture->width, &texture->height, &numComponents, 0);
+	if (data != nullptr)
+	{
+		texture->target = target;
+		glGenTextures(1, &texture->textureID);
+		glBindTexture(texture->target, texture->textureID);
+		GLuint format = numComponents == 3 ? GL_RGB : GL_RGBA;
+		//cout << numComponents << endl;
+		glTexImage2D(texture->target, 0, format, texture->width, texture->height, 0, format, GL_UNSIGNED_BYTE, data);
+
+		// Note: Only wrapping modes supported for GL_TEXTURE_RECTANGLE when defining
+		// GL_TEXTURE_WRAP are GL_CLAMP_TO_EDGE or GL_CLAMP_TO_BORDER
+		glTexParameteri(texture->target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(texture->target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		glTexParameteri(texture->target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(texture->target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+		// Clean up
+		glBindTexture(texture->target, 0);
+		stbi_image_free(data);
+	}
+	return true; //error
+}
+
+void DestroyTexture(Texture *texture)
+{
+	glBindTexture(texture->target, 0);
+	glDeleteTextures(1, &texture->textureID);
+}
 
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 /*
@@ -157,12 +205,13 @@ int main(int argc, char **argv)
 //**********************************************************************************
 	vector<GLuint> programs;
 	vector<Shader> shaders;
-	vector<Geometry> shapes(1);
+	vector<Geometry> shapes(2);
 
 	initDefaultShaders(shaders);
 	initDefaultProgram(programs, shaders);
 
 	createGeometry(shapes[0]);
+	createGeometry(shapes[1]);
 //***********************************************************************************
 
 	int width, height;
