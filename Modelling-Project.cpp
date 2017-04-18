@@ -39,7 +39,7 @@
 #include FT_FREETYPE_H
 
 #include "Camera.h"
-#include "CustomOperators.h"
+//#include "CustomOperators.h"
 #include "FloorGraph.h"
 
 #define CAM_SPEED 0.05f
@@ -104,6 +104,9 @@ bool kpDivPressed = false;
 
 /* toggles 3d using right control */
 bool is3D = false;
+
+/* toggles the drawing of the ceiling */
+bool drawCeiling = false;
 
 /* toggles room expansion using space bar */
 bool isExpanding = true;
@@ -207,19 +210,23 @@ int main(int argc, char **argv)
 
 	int width, height;
 	glfwGetWindowSize(window, &width, &height);
-	cam = *(new Camera(mat3(1), vec3(0,-30,0), width, height));
+	cam = *(new Camera(mat3(1), vec3(0,-20,0), width, height));
 
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LEQUAL);
 	glPointSize(10.f);
 	while (!glfwWindowShouldClose(window))
 	{
-		if(loadViewProjMatrix(cam, programs[0])!=0)
+		if(loadViewProjMatrix(cam, programs[0]) != 0)
 			return 1;
 
 		if (isExpanding) fg.expandRooms();
-		if (!isExpanding) fg.setHouseOutline();
+		if (!isExpanding) fg.setPerimeter(fg.housePerimeter, 0.02f);
 		fg.setDoors();
+		for (Room* room : fg.graph) {
+			room->setRoomGeometry(is3D);
+		}
+
 		renderRooms(shapes[0], programs[0]);
 
 		GLenum status = openGLerror();
@@ -231,7 +238,9 @@ int main(int argc, char **argv)
 		}
 
 		checkToggleWalls();
+		
 		moveCamera();
+		loadCamera(cam.getPosition(), programs[0]);
 
 	    glfwPollEvents();
 	    glfwSwapBuffers(window);
@@ -273,7 +282,7 @@ void renderRooms(Geometry shape, GLuint program)
 			color = vec4(1,1,0,1);
 		loadColor(color, program);
 
-		r->setRoomGeometry(is3D, shape.vertices, shape.normals, shape.indices);
+		r->getRoomGeometry(shape.vertices, shape.normals, shape.indices);
 		loadGeometryArrays(program, shape);
 		render(program, shape, GL_TRIANGLES);
 	}
@@ -291,14 +300,13 @@ void renderRooms(Geometry shape, GLuint program)
 	shape.normals.clear();
 	shape.indices.clear();
 
-	loadColor(vec4(0,0,0,1), program);
 	setDrawingMode(0, program);
+	loadColor(vec4(0,0,0,1), program);
 
 	fg.getEdges(shape.vertices);
 	loadGeometryArrays(program, shape);
 	render(program, shape, GL_LINES);
 
-	glDisable(GL_DEPTH_TEST);
 	fg.getRoomsOutlines(shape.vertices, shape.indices);
 	loadGeometryArrays(program, shape);
 	render(program, shape, GL_LINES);
@@ -307,7 +315,6 @@ void renderRooms(Geometry shape, GLuint program)
 	shape.normals.clear();
 	shape.indices.clear();
 
-	glEnable(GL_DEPTH_TEST);
 	fg.getRoomsPos(shape.vertices);
 	loadGeometryArrays(program, shape);
 	render(program, shape, GL_POINTS);
@@ -325,9 +332,9 @@ void renderRooms(Geometry shape, GLuint program)
 	shape.normals.clear();
 	shape.indices.clear();
 
-	if(!isExpanding){
-		loadColor(vec4(0,0.5f,1,1), program);
-		fg.getHouseOutline(is3D, shape.vertices, shape.normals, shape.indices);
+	loadColor(vec4(0,0.5f,1,1), program);
+	if (!isExpanding) {
+		fg.getHousePerimeter(is3D, shape.vertices, shape.normals, shape.indices);
 		loadGeometryArrays(program, shape);
 		if (is3D) {
 			setDrawingMode(1, program);
@@ -336,6 +343,17 @@ void renderRooms(Geometry shape, GLuint program)
 			setDrawingMode(0, program);
 			render(program, shape, GL_LINE_STRIP);
 		}
+	}
+
+	shape.vertices.clear();
+	shape.normals.clear();
+	shape.indices.clear();
+
+	if (!isExpanding && is3D && drawCeiling) {
+		setDrawingMode(0, program);
+		fg.getCeiling(shape.vertices);
+		loadGeometryArrays(program, shape);
+		render(program, shape, GL_TRIANGLE_FAN);
 	}
 }
 //**************************************************************************************\\
@@ -775,19 +793,19 @@ int cursorSelectNode(GLFWwindow *window) {
 	uint count = 0;
 	for(Room *node : fg.graph) {
 		/* test if the room's basePos is being selected */
-		pos = vec3(node->basePos.x, -10.f, node->basePos.y);
+		pos = node->basePos;
 		if (projectionOutput(window, pos) < 0.1) {
 			nodeType = 0;
 			break;
 		}
 		/* test if the room's upRightPos is being selected */
-		pos = vec3(node->upRightPos.x, -10.f, node->upRightPos.y);
+		pos = node->upRightPos;
 		if (projectionOutput(window, pos) < 0.1) {
 			nodeType = 1;
 			break;
 		}
 		/* test if the room's downLeftPos is being selected */
-		pos = vec3(node->downLeftPos.x, -10.f, node->downLeftPos.y);
+		pos = node->downLeftPos;
 		if (projectionOutput(window, pos) < 0.1) {
 			nodeType = 2;
 			break;
@@ -863,29 +881,29 @@ void cursor_pos_callback(GLFWwindow* window, double xpos, double ypos)
 		Room* room = fg.graph[selectedRoom];
 		vec3 pos;
 		if (nodeType == 0) {
-			pos = vec3(room->basePos.x, -10.f, room->basePos.y);
+			pos = room->basePos;
 		} else if (nodeType == 1) {
-			pos = vec3(room->upRightPos.x, -10.f, room->upRightPos.y);
+			pos = room->upRightPos;
 		} else if (nodeType == 2) {
-			pos = vec3(room->downLeftPos.x, -10.f, room->downLeftPos.y);
+			pos = room->downLeftPos;
 		}
 
 		float depth = project(pos, cam.getViewMatrix(), cam.getPerspectiveMatrix(), vec4(0.f,0.f,(float)width, (float)height)).z;
 		vec3 pos3d = unProject(vec3(xpos, height-ypos, depth), cam.getViewMatrix(), cam.getPerspectiveMatrix(), vec4(0.f,0.f,(float)width, (float)height));
 
-		vec2 upRightDisp = room->upRightPos - room->basePos;
-		vec2 downLeftDisp = room->downLeftPos - room->basePos;
+		vec3 upRightDisp = room->upRightPos - room->basePos;
+		vec3 downLeftDisp = room->downLeftPos - room->basePos;
 
 		if (nodeType == 0) {
-			room->basePos = vec2(pos3d.x, pos3d.z);
+			room->basePos = vec3(pos3d.x, 0.f, pos3d.z);
 			if (!leftCtrlPressed) {
 				room->upRightPos = room->basePos + upRightDisp;
 				room->downLeftPos = room->basePos + downLeftDisp;
 			}
 		} else if (nodeType == 1) {
-			room->upRightPos = vec2(pos3d.x, pos3d.z);
+			room->upRightPos = vec3(pos3d.x, 0.f, pos3d.z);;
 		} else if (nodeType == 2) {
-			room->downLeftPos = vec2(pos3d.x, pos3d.z);
+			room->downLeftPos = vec3(pos3d.x, 0.f, pos3d.z);;
 		}
 	}
 }
@@ -974,5 +992,7 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
     	downToggle = !downToggle;
     else if(key == GLFW_KEY_L && action == GLFW_PRESS)
     	rightToggle = !rightToggle;
+    else if(key == GLFW_KEY_F && action == GLFW_PRESS)
+    	drawCeiling = !drawCeiling;
 }
 //########################################################################################

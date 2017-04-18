@@ -9,8 +9,7 @@ class FloorGraph
 {
 public:
   vector<Room*> graph;
-  vector<vec2> doors;
-  vector<vec2> houseOutline;
+  vector<vec3> housePerimeter;
 
   FloorGraph();
   void printGraphData();
@@ -28,9 +27,10 @@ public:
   void getEdges(vector<vec3> &vertices);
   void setDoors();
   void getDoors(vector<vec3> &vertices);
-  void setHouseOutline();
-  void getHouseOutline(bool is3D, vector<vec3> &vertices, vector<vec3> &normals, vector<uint> &indices);
+  void setPerimeter(vector<vec3> &perimeter,float offset);
+  void getHousePerimeter(bool is3D, vector<vec3> &vertices, vector<vec3> &normals, vector<uint> &indices);
   void getGround(bool is3D, vector<vec3> &vertices, vector<vec3> &normals, vector<uint> &indices);
+  void getCeiling(vector<vec3> &vertices);
 
   float findLowestPos();
   float findHighestPos();
@@ -46,28 +46,9 @@ FloorGraph::FloorGraph()
 
 	Room* room = graph[0];
 	
-	queue<int> queue;
-	room->basePos = vec2(0.f, 0.f);
+	room->basePos = vec3(0.f);
 	room->upRightPos = room->basePos;
 	room->downLeftPos = room->basePos;
-	queue.push(room->index);
-
-	while (queue.size() > 0) {
-		room = graph[queue.front()];
-		queue.pop();
-
-		for (Room* neib : room->neighbours) {
-			if (room->index < neib->index) {
-				neib->basePos = vec2(float(rand() % 11 - 5), float(rand() % 11 - 5));
-				queue.push(neib->index);
-			}
-		}
-	}
-}
-
-void FloorGraph::printGraphData()
-{
-	Room* room = graph[0];
 	
 	queue<int> queue;
 	queue.push(room->index);
@@ -76,6 +57,18 @@ void FloorGraph::printGraphData()
 		room = graph[queue.front()];
 		queue.pop();
 
+		for (Room* neib : room->neighbours) {
+			if (room->index < neib->index) {
+				neib->basePos = vec3(float(rand() % 11 - 5), 0.f, float(rand() % 11 - 5));
+				queue.push(neib->index);
+			}
+		}
+	}
+}
+
+void FloorGraph::printGraphData()
+{
+	for (Room* room : graph) {
 		cout << "Room " << room->index <<
 				" of type " << room->type <<
 				" and size " << room->size <<
@@ -83,9 +76,6 @@ void FloorGraph::printGraphData()
 
 		for (Room* neib : room->neighbours) {
 			cout << neib->index << ", ";
-			if (room->index < neib->index) {
-				queue.push(neib->index);
-			}
 		}
 
 		if (room->index == 0) 
@@ -152,8 +142,8 @@ void FloorGraph::getEdges(vector<vec3> &vertices)
 		room = graph[queue.front()];
 		queue.pop();
 
-		vertices.push_back((vec3(room->parent->basePos.x, -10.f, room->parent->basePos.y)));
-		vertices.push_back((vec3(room->basePos.x, -10.f, room->basePos.y)));
+		vertices.push_back(room->parent->basePos + vec3(0.f, -0.01f, 0.f));
+		vertices.push_back(room->basePos + vec3(0.f, -0.01f, -0.f));
 
 		for (Room* neib : room->neighbours) {
 			if (room->index < neib->index)
@@ -166,13 +156,13 @@ void FloorGraph::getRoomsOutlines(vector<vec3> &vertices, vector<uint> &indices)
 {
   vertices.clear();
   indices.clear();
-  uint count =0;
-  for(Room* room : graph)
+  uint count = 0;
+  for (Room* room : graph)
   {
-    vertices.push_back(vec3(room->upRightPos.x, -10.f, room->upRightPos.y));
-    vertices.push_back(vec3(room->downLeftPos.x, -10.f, room->upRightPos.y));
-    vertices.push_back(vec3(room->downLeftPos.x, -10.f, room->downLeftPos.y));
-    vertices.push_back(vec3(room->upRightPos.x, -10.f, room->downLeftPos.y));
+    vertices.push_back(vec3(room->upRightPos.x, room->basePos.y, room->upRightPos.z));
+    vertices.push_back(vec3(room->downLeftPos.x, room->basePos.y, room->upRightPos.z));
+    vertices.push_back(vec3(room->downLeftPos.x, room->basePos.y, room->downLeftPos.z));
+    vertices.push_back(vec3(room->upRightPos.x, room->basePos.y, room->downLeftPos.z));
 
     for(uint i=0; i<5; i++)
     {
@@ -188,14 +178,21 @@ void FloorGraph::getRoomsPos(vector<vec3> &vertices)
 {
 	vertices.clear();
 	for (Room* room : graph) {
-		vertices.push_back(vec3(room->basePos.x, -10.f, room->basePos.y));
+		vertices.push_back(room->basePos + vec3(0.f, -0.01f, 0.f));
 	}
 }
 
 void FloorGraph::setDoors()
 {
-	doors.clear();
+	for (Room* room : graph) {
+		room->doors.clear();
+		room->setDoorPos();
+	}
+}
 
+void FloorGraph::getDoors(vector<vec3> &vertices) {
+	vertices.clear();
+	
 	Room* room = graph[0];
 	
 	queue<int> queue;
@@ -203,14 +200,13 @@ void FloorGraph::setDoors()
 		queue.push(neib->index);
 	}
 
-	while (queue.size() > 0) {
+	while (!queue.empty()) {
 		room = graph[queue.front()];
 		queue.pop();
 
-		vec2 roomPos = room->getDoorPos();
-
-		if (roomPos.x != 0.f || roomPos.y != 0.f)
-			doors.push_back(roomPos);
+		for (vec3 doorPos : room->doors) {
+			vertices.push_back(doorPos);
+		}
 
 		for (Room* neib : room->neighbours) {
 			if (room->index < neib->index)
@@ -219,18 +215,11 @@ void FloorGraph::setDoors()
 	}
 }
 
-void FloorGraph::getDoors(vector<vec3> &vertices) {
-	vertices.clear();
-	for (vec2 pos : doors) {
-		vertices.push_back(vec3(pos.x, -10.f, pos.y));
-	}
-}
-
 float FloorGraph::findLowestPos() {
 	float retVal = 10.f;
 	for (Room* room : graph) {
-		if (room->downLeftPos.y < retVal)
-			retVal = room->downLeftPos.y;
+		if (room->downLeftPos.z < retVal)
+			retVal = room->downLeftPos.z;
 	}
 	return retVal;
 }
@@ -238,8 +227,8 @@ float FloorGraph::findLowestPos() {
 float FloorGraph::findHighestPos() {
 	float retVal = -10.f;
 	for (Room* room : graph) {
-		if (room->upRightPos.y > retVal)
-			retVal = room->upRightPos.y;
+		if (room->upRightPos.z > retVal)
+			retVal = room->upRightPos.z;
 	}
 	return retVal;
 }
@@ -247,7 +236,7 @@ float FloorGraph::findHighestPos() {
 float FloorGraph::findLeftmostPos(float height) {
 	float retVal = 10.f;
 	for (Room* room : graph) {
-		if (room->downLeftPos.y <= height && room->upRightPos.y >= height) {
+		if (room->downLeftPos.z <= height && room->upRightPos.z >= height) {
 			if (room->downLeftPos.x < retVal)
 				retVal = room->downLeftPos.x;
 		} else continue;
@@ -258,7 +247,7 @@ float FloorGraph::findLeftmostPos(float height) {
 float FloorGraph::findRightmostPos(float height) {
 	float retVal = -10.f;
 	for (Room* room: graph) {
-		if (room->downLeftPos.y <= height && room->upRightPos.y >= height) {
+		if (room->downLeftPos.z <= height && room->upRightPos.z >= height) {
 			if (room->upRightPos.x > retVal)
 				retVal = room->upRightPos.x;
 		} else continue;
@@ -266,45 +255,65 @@ float FloorGraph::findRightmostPos(float height) {
 	return retVal;
 }
 
-void FloorGraph::setHouseOutline(){
-	houseOutline.clear();
+void FloorGraph::setPerimeter(vector<vec3> &perimeter, float offset){
+	perimeter.clear();
 
 	float start = findLowestPos();
 	float end = findHighestPos();
 	float leftmost = findLeftmostPos(start);
 	float rightmost = findRightmostPos(end);
 
-	for (float i = start; i <= end; i += 0.005f) {
-		houseOutline.push_back(vec2(leftmost, i));
-		while (leftmost == findLeftmostPos(i)) {
-			i += 0.005f;
+	bool goingLeft = true;
+	float newLeftmost = leftmost;
+	float newRightmost = rightmost;
+	float iOffset;
+
+	for (float i = start; i <= end; i += 0.001f) {
+		if (goingLeft) iOffset = -offset;
+		else iOffset = offset;
+
+		perimeter.push_back(vec3(leftmost - offset, -0.001f, i + iOffset));
+
+		while (leftmost == newLeftmost) {
+			i += 0.001f;
+			newLeftmost = findLeftmostPos(i);
 		}
-		houseOutline.push_back(vec2(leftmost, i));
-		leftmost = findLeftmostPos(i);
-	}
-	for (float i = end; i >= start; i -= 0.005f) {
-		houseOutline.push_back(vec2(rightmost, i));
-		while (rightmost == findRightmostPos(i)) {
-			i -= 0.005f;
-		}
-		houseOutline.push_back(vec2(rightmost, i));
-		rightmost = findRightmostPos(i);
+
+		if (leftmost < newLeftmost) goingLeft = false;
+		else if (leftmost > newLeftmost) goingLeft = true;
+
+		perimeter.push_back(vec3(leftmost - offset, -0.001f, i + iOffset));
+		leftmost = newLeftmost;
 	}
 
-	houseOutline.push_back(houseOutline[0]);
-	houseOutline.push_back(houseOutline[1]);
+	for (float i = end; i >= start; i -= 0.001f) {
+		if (goingLeft) iOffset = -offset;
+		else iOffset = offset;
+
+		perimeter.push_back(vec3(rightmost + offset, -0.001f, i + iOffset));
+
+		while (rightmost == newRightmost) {
+			i -= 0.001f;
+			newRightmost = findRightmostPos(i);
+		}
+
+		if (rightmost < newRightmost) goingLeft = false;
+		else goingLeft = true;
+
+		perimeter.push_back(vec3(rightmost + offset, -0.001f, i + iOffset));
+		rightmost = newRightmost;
+	}
 }
 
-void FloorGraph::getHouseOutline(bool is3D, vector<vec3> &vertices, vector<vec3> &normals, vector<uint> &indices) {
-	
-	for (uint i = 0; i < houseOutline.size(); i++) {
+void FloorGraph::getHousePerimeter(bool is3D, vector<vec3> &vertices, vector<vec3> &normals, vector<uint> &indices) {
+	for (uint i = 0; i < housePerimeter.size(); i++) {
 		if (is3D) {
 			vector<vec3> verts, norms;
 			vector<uint> indexes;
 
-			vec3 offsetEnd = vec3(houseOutline[(i+2)%houseOutline.size()].x, -10.f, houseOutline[(i+2)%houseOutline.size()].y);
-			vec3 offsetStart = vec3(houseOutline[(i+1)%houseOutline.size()].x, -10.f, houseOutline[(i+1)%houseOutline.size()].y);
-			vec3 current = vec3(houseOutline[(i)%houseOutline.size()].x, -10.f, houseOutline[(i)%houseOutline.size()].y);
+			vec3 offsetEnd = housePerimeter[(i+2)%housePerimeter.size()];
+			vec3 offsetStart = housePerimeter[(i+1)%housePerimeter.size()];
+			vec3 current = housePerimeter[(i)%housePerimeter.size()];
 
 			vec3 offset =  offsetEnd - offsetStart;
 			vec3 wallCorner = (offsetStart + normalize(offset) * 0.1f);
@@ -317,9 +326,30 @@ void FloorGraph::getHouseOutline(bool is3D, vector<vec3> &vertices, vector<vec3>
 			vertices.insert(vertices.end(), verts.begin(), verts.end());
 			normals.insert(normals.end(), norms.begin(), norms.end());
 		} else {
-			vertices.push_back(vec3(houseOutline[i].x, -10.f, houseOutline[i].y));
+			vertices.push_back(housePerimeter[i]);
 		}
 	}
+}
+
+void FloorGraph::getCeiling(vector<vec3> &vertices) {
+	vector<vec3> ceilingPerimeter;
+	setPerimeter(ceilingPerimeter, 0.01f);
+
+	uint count = 0;
+	int index = -1;
+
+	for (Room* room : graph) {
+		if (count < room->neighbours.size()) {
+			count = room->neighbours.size();
+			index = room->index;
+		}
+	}
+
+	vertices.push_back(graph[index]->basePos + vec3(0.f, -1.01f, 0.f));
+	for (vec3 outlinePos : ceilingPerimeter) {
+		vertices.push_back(outlinePos + vec3(0.f, -1.01f, 0.f));
+	}
+	vertices.push_back(ceilingPerimeter[0] + vec3(0.f, -1.01f, 0.f));
 }
 
 void FloorGraph::getGround(bool is3D, vector<vec3> &vertices, vector<vec3> &normals, vector<uint> &indices) {
@@ -327,36 +357,36 @@ void FloorGraph::getGround(bool is3D, vector<vec3> &vertices, vector<vec3> &norm
 	normals.clear();
 	indices.clear();
 
-	vec3 groundCorner1 = vec3(-10.f, -9.9f, -10.f);
-	vec3 groundCorner2 = vec3(10.f, -9.9f, 10.f);
-	createPrism(vertices, normals, indices, groundCorner1, groundCorner2, 0.09f);
+	vec3 groundCorner1 = vec3(15.f, 0.1f, 15.f);
+	vec3 groundCorner2 = vec3(-15.f, 0.1f, -15.f);
+	createPrism(vertices, normals, indices, groundCorner1, groundCorner2, -0.09f);
 }
 
 void changeExpansion(Room* room1, Room* room2) {
 	/* room1 is to the bottom left, room2 is to the top right */
-	if ((room1->basePos.x <= room2->basePos.x) && (room1->basePos.y <= room2->basePos.y)) {
-		if ((room1->upRightPos.x >= room2->downLeftPos.x) && (room1->upRightPos.y >= room2->downLeftPos.y)) {
+	if ((room1->basePos.x <= room2->basePos.x) && (room1->basePos.z <= room2->basePos.z)) {
+		if ((room1->upRightPos.x >= room2->downLeftPos.x) && (room1->upRightPos.z >= room2->downLeftPos.z)) {
 			if (room1->upRightPos.x >= room2->downLeftPos.x + 0.05f) {
-				room1->upExpand -= 0.01f;
-				room2->downExpand -= 0.01f;
+				room1->upExpand = 0.f;
+				room2->downExpand = 0.f;
 			}
-			else if (room1->upRightPos.y >= room2->downLeftPos.y + 0.05f) {
-				room1->rightExpand -= 0.01f;
-				room2->leftExpand -= 0.01f;
+			else if (room1->upRightPos.z >= room2->downLeftPos.z + 0.05f) {
+				room1->rightExpand = 0.f;
+				room2->leftExpand = 0.f;
 			}
 		}
 	}
 
 	/* room1 is to the top left, room2 is to the bottom right */
-	else if ((room1->basePos.x <= room2->basePos.x) && (room1->basePos.y >= room2->basePos.y)) {
-		if ((room1->upRightPos.x >= room2->downLeftPos.x) && (room1->downLeftPos.y <= room2->upRightPos.y)) {
+	else if ((room1->basePos.x <= room2->basePos.x) && (room1->basePos.z >= room2->basePos.z)) {
+		if ((room1->upRightPos.x >= room2->downLeftPos.x) && (room1->downLeftPos.z <= room2->upRightPos.z)) {
 			if (room1->upRightPos.x >= room2->downLeftPos.x + 0.05f) {
-				room1->downExpand -= 0.01f;
-				room2->upExpand -= 0.01f;
+				room1->downExpand = 0.f;
+				room2->upExpand = 0.f;
 			}
-			else if (room1->downLeftPos.y <= room2->upRightPos.y - 0.05f) {
-				room1->rightExpand -= 0.01f;
-				room2->leftExpand -= 0.01f;
+			else if (room1->downLeftPos.z <= room2->upRightPos.z - 0.05f) {
+				room1->rightExpand = 0.f;
+				room2->leftExpand = 0.f;
 			}
 		}
 	}
@@ -391,8 +421,10 @@ void spreadRooms(vector<Room*> &siblings, Room* room, Room* papa) {
 
 	/* make sure the first sibling is past 90 degrees from the incoming branch */
 	if (papa->index != 0) {
-		vec2 papaDirectionVector = papa->parent->basePos - papa->basePos;
-		vec2 thisDirectionVector = siblings[0]->basePos - papa->basePos;
+		vec2 papaDirectionVector = vec2(papa->parent->basePos.x - papa->basePos.x ,
+										papa->parent->basePos.z - papa->basePos.z );
+		vec2 thisDirectionVector = vec2(siblings[0]->basePos.x - papa->basePos.x ,
+										siblings[0]->basePos.z - papa->basePos.z );
 		float numer = dot(papaDirectionVector, thisDirectionVector);
 		float denom = length(papaDirectionVector) * length(thisDirectionVector);
 		float angle = acos(numer / denom);
@@ -401,7 +433,7 @@ void spreadRooms(vector<Room*> &siblings, Room* room, Room* papa) {
 			float phi = (3.f * M_PI / 2.f);
 			float oldX = papaDirectionVector.x;
 			float oldY = papaDirectionVector.y;
-			vec2 rotatedVec = vec2((oldX * cos(phi)) - (oldY * sin(phi)), (oldY * cos(phi)) + (oldX * sin(phi)));
+			vec3 rotatedVec = vec3((oldX * cos(phi)) - (oldY * sin(phi)), 0.f, (oldY * cos(phi)) + (oldX * sin(phi)));
 			siblings[0]->basePos = length(siblings[0]->basePos) * glm::normalize(rotatedVec);
 		}
 	}
@@ -413,8 +445,8 @@ void spreadRooms(vector<Room*> &siblings, Room* room, Room* papa) {
 
 	for (int i = 1; i < int(siblings.size()); i++) {
 		float oldX = siblings[i - 1]->basePos.x - papa->basePos.x;
-		float oldY = siblings[i - 1]->basePos.y - papa->basePos.y;
-		vec2 rotatedVec = glm::normalize(vec2((oldX * cos(theta)) - (oldY * sin(theta)), (oldY * cos(theta)) + (oldX * sin(theta))));
+		float oldZ = siblings[i - 1]->basePos.z - papa->basePos.z;
+		vec3 rotatedVec = glm::normalize(vec3((oldX * cos(theta)) - (oldZ * sin(theta)), 0.f, (oldZ * cos(theta)) + (oldX * sin(theta))));
 		siblings[i]->basePos = (length(siblings[i]->basePos - papa->basePos) * rotatedVec) + papa->basePos;
 	}
 }
@@ -422,15 +454,17 @@ void spreadRooms(vector<Room*> &siblings, Room* room, Room* papa) {
 void setRoomBasePos(Room* room, Room* papa) {
 	// if room is not a child of papa:
 	if (papa->index != 0) {
-		vec2 papaDirectionVector = papa->parent->basePos - papa->basePos;
-		vec2 thisDirectionVector = room->basePos - papa->basePos;
+		vec2 papaDirectionVector = vec2(papa->parent->basePos.x - papa->basePos.x ,
+										papa->parent->basePos.z - papa->basePos.z );
+		vec2 thisDirectionVector = vec2(room->basePos.x - papa->basePos.x ,
+										room->basePos.z - papa->basePos.z );
 		float numer = dot(papaDirectionVector, thisDirectionVector);
 		float denom = length(papaDirectionVector) * length(thisDirectionVector);
 		float angle = acos(numer / denom) * (180.f / M_PI);
 		if (angle < 90.f) {
-			room->basePos = 2.2f * glm::normalize(-1.f *  thisDirectionVector) + papa->basePos;
+			room->basePos = 2.2f * glm::normalize(-1.f * vec3(thisDirectionVector.x, 0.f, thisDirectionVector.y)) + papa->basePos;
 		} else {
-			room->basePos = 2.2f * glm::normalize(thisDirectionVector) + papa->basePos;
+			room->basePos = 2.2f * glm::normalize(vec3(thisDirectionVector.x, 0.f, thisDirectionVector.y)) + papa->basePos;
 		}
 	} else {
 		room->basePos = 2.2f * glm::normalize(room->basePos);
