@@ -35,6 +35,8 @@ public:
     float area();
     void setRoomGeometry(bool is3D, vector<vec3> &vertices, vector<vec3> &normals, vector<uint> &indices);
     vec2 getDoorPos();
+    void increaseArea ();
+    void initializeExpansionRates();
 };
 
 vector<Room*> Room::createRooms(int type, float size, int baseIndex, int maxNumRooms)
@@ -266,46 +268,99 @@ vec2 Room::getDoorPos() {
     if (edgeVector.x >= 0.f && edgeVector.y >= 0.f) {
       wallStartPos = upRightPos;
       getWallByQuadrant(this, wallVector, wallStartPos, edgeVector);
-      if (wallVector.y == 0.f && !renderWall[0]) {
+      if (wallVector.y == 0.f && !renderWall[0])
           return vec2(0.f, 0.f);
-      } else if (wallVector.y != 0.f && !renderWall[3]) {
+       else if (wallVector.y != 0.f && !renderWall[3])
           return vec2(0.f, 0.f);
-      }
     }
 
     /* second quadrant, top left */
     else if (edgeVector.x < 0.f && edgeVector.y >= 0.f) {
       wallStartPos = vec2(downLeftPos.x, upRightPos.y);
       getWallByQuadrant(this, wallVector, wallStartPos, edgeVector);
-      if (wallVector.x == 0.f && !renderWall[1]) {
+      if (wallVector.x == 0.f && !renderWall[1])
           return vec2(0.f, 0.f);
-      } else if (wallVector.x != 0.f && !renderWall[0]) {
+       else if (wallVector.x != 0.f && !renderWall[0])
           return vec2(0.f, 0.f);
-      }
     }
 
     /* third quadrant, bottom left */
     else if (edgeVector.x <= 0.f && edgeVector.y < 0.f) {
       wallStartPos = downLeftPos;
       getWallByQuadrant(this, wallVector, wallStartPos, edgeVector);
-      if (wallVector.y == 0.f && !renderWall[2]) {
+      if (wallVector.y == 0.f && !renderWall[2])
           return vec2(0.f, 0.f);
-      } else if (wallVector.y != 0.f && !renderWall[1]) {
+       else if (wallVector.y != 0.f && !renderWall[1])
           return vec2(0.f, 0.f);
-      }
     }
 
     /* fourth quadrant, bottom right */
     else if (edgeVector.x > 0.f && edgeVector.y < 0.f) {
       wallStartPos = vec2(upRightPos.x, downLeftPos.y);
       getWallByQuadrant(this, wallVector, wallStartPos, edgeVector);
-      if (wallVector.x == 0.f && !renderWall[3]) {
+      if (wallVector.x == 0.f && !renderWall[3])
           return vec2(0.f, 0.f);
-      } else if (wallVector.x != 0.f && !renderWall[2]) {
+       else if (wallVector.x != 0.f && !renderWall[2])
           return vec2(0.f, 0.f);
-      }
     }
 
     return (intersectingPoint(edgeStartPos, edgeVector, wallStartPos, wallVector));
+  }
+}
+
+void Room::increaseArea () {
+    if (area() < size) {
+
+      if (rightExpand > 0.f)
+        upRightPos.x += rightExpand;
+      else
+        rightExpand = 0.f;
+
+      if (upExpand > 0.f)
+        upRightPos.y += upExpand;
+      else
+        upExpand = 0.f;
+
+      if (leftExpand > 0.f)
+        downLeftPos.x -= leftExpand;
+      else
+        leftExpand = 0.f;
+
+      if (downExpand > 0.f)
+        downLeftPos.y -= downExpand;
+      else
+        downExpand = 0.f;
+
+      upExpand += 0.0001f;
+      rightExpand += 0.0001f;
+      downExpand += 0.0001f;
+      leftExpand += 0.0001f;
+    }
+}
+
+void Room::initializeExpansionRates() {
+  upRightPos = basePos;
+  downLeftPos = basePos;
+
+  vec2 dirVector;
+  if (index == 0)
+    dirVector = basePos;
+  else
+    dirVector = (basePos - parent->basePos);
+
+  if (-dirVector.x < 0.f) {
+   leftExpand += 0.001f;
+   rightExpand -= 0.001f;
+  } else if (-dirVector.x > 0.f) {
+   rightExpand += 0.001f;
+   leftExpand -= 0.001f;
+  }
+
+  if (-dirVector.y < 0.f) {
+   downExpand += 0.001f;
+   upExpand -= 0.001f;
+  } else if (-dirVector.y > 0.f) {
+   upExpand += 0.001f;
+   downExpand -= 0.001f;
   }
 }

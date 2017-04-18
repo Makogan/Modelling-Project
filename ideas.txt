@@ -3,9 +3,7 @@ Ideas
 - texture the walls and the roof
 - second floor, fits on top of the outline of the first floor (with fewer rooms). also staircases are now necessary
 - furniture being dragged in from UI, integrating obj files
-- decrease the amount by which the perimeter algorithm iterates
 - ceiling for the first floor, use the perimeter algorithm
-- add a ground, remove the room's floors
 
 Done
 - move basePos without moving room
@@ -15,6 +13,7 @@ Done
 - an 'outside wall' that is textured differently to inside walls, check by having an outside rectangle bigger than the house that finds the closest parallel wall to its location (also use that rectangle for roof)
 
 Unnecessary but good coding
+- change vec2 to vec3
 - don't let basePos go outside room's boundaries
 - implement new 'hitsARoom' function that finds if some thing is intersecting a room, and if so, which room they hit
 - a 'roomElementSelected' function that sees what part of a room the user is trying to interact with, if at all

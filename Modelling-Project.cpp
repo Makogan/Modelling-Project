@@ -81,8 +81,8 @@ struct Geometry
 */
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-Camera cam;
 FloorGraph fg;
+Camera cam;
 
 /* camera movement boolean operators */
 bool wPressed = false;
@@ -177,7 +177,10 @@ int main(int argc, char **argv)
 	srand((time(0)));
 
 	fg = FloorGraph();
+	fg.printGraphData();
 	fg.setRoomsPos();
+	for (Room* room : fg.graph)
+		room->initializeExpansionRates();
 
 	GLFWwindow* window = createWindow();
 
@@ -204,7 +207,7 @@ int main(int argc, char **argv)
 
 	int width, height;
 	glfwGetWindowSize(window, &width, &height);
-	cam = *(new Camera(mat3(1), vec3(0,-20,0), width, height));
+	cam = *(new Camera(mat3(1), vec3(0,-30,0), width, height));
 
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LEQUAL);
@@ -253,7 +256,7 @@ int main(int argc, char **argv)
 //========================================================================================
 void renderRooms(Geometry shape, GLuint program)
 {
-	glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
+	glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glEnable(GL_DEPTH_TEST);
 
@@ -274,6 +277,15 @@ void renderRooms(Geometry shape, GLuint program)
 		loadGeometryArrays(program, shape);
 		render(program, shape, GL_TRIANGLES);
 	}
+
+	shape.vertices.clear();
+	shape.normals.clear();
+	shape.indices.clear();
+
+	loadColor(vec4(0.6,0.6,0.6,1), program);
+	fg.getGround(is3D, shape.vertices, shape.normals, shape.indices);
+	loadGeometryArrays(program, shape);
+	render(program, shape, GL_TRIANGLES);
 
 	shape.vertices.clear();
 	shape.normals.clear();
