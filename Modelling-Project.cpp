@@ -372,7 +372,7 @@ void renderRooms(Geometry shape, GLuint program)
 		shape.vertices.clear();
 		shape.normals.clear();
 		shape.indices.clear();
-		
+
 		fg.getRoofTop(shape.vertices);
 		loadGeometryArrays(program, shape);
 		render(program, shape, GL_TRIANGLE_FAN);

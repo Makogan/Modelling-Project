@@ -536,6 +536,31 @@ void findSkeletonEdges(vector<vec3> walls, vector<vec3> &skeletonEdges) {
 	}
 }
 
+void findIntersections(vector<vec3>& intersections, vector<vec3>& roofPerimeter, vector<vec3>& skeletonEdges)
+{
+	vec3 intsectPoint = vec3(0.f);
+
+	intersectingPoint(	roofPerimeter[0], skeletonEdges[0],
+						roofPerimeter[roofPerimeter.size() - 3], skeletonEdges.back(), intsectPoint);
+
+	if (intsectPoint != vec3(0.f) && length(intsectPoint - roofPerimeter[0]) > 1.f)
+		intersections.push_back(intsectPoint);
+
+	for (uint i = 1; i < skeletonEdges.size(); i++) {
+		intsectPoint = vec3(0.f);
+		intersectingPoint(	roofPerimeter[i-1], skeletonEdges[i-1],
+							roofPerimeter[i], skeletonEdges[i], intsectPoint);
+
+		if (intsectPoint != vec3(0.f) && length(intsectPoint - roofPerimeter[i]) > 1.f)
+			intersections.push_back(intsectPoint);
+	}
+
+	for (uint i = 0; i < intersections.size() - 1; i++) {
+		if (length(intersections[i + 1] - intersections[i]) < 2.5f)
+			intersections.erase(intersections.begin() + i);
+	}
+}
+
 void FloorGraph::setRoof(vector<vec3> &vertices, vector<vec3> &normals) {
 	vector<vec3> roofPerimeter;
 	setPerimeter(roofPerimeter, 0.2f);
@@ -550,38 +575,14 @@ void FloorGraph::setRoof(vector<vec3> &vertices, vector<vec3> &normals) {
 	findSkeletonEdges(walls, skeletonEdges);
 
 	vector<vec3> intersections;
-	vec3 intsectPoint = vec3(0.f);
+	findIntersections(intersections, roofPerimeter, skeletonEdges);
 
-	intersectingPoint(	roofPerimeter[0], skeletonEdges[0],
-						roofPerimeter[roofPerimeter.size() - 3], skeletonEdges.back(), intsectPoint);
-	if (intsectPoint != vec3(0.f) && length(intsectPoint - roofPerimeter[0]) > 1.f) {
-		intersections.push_back(intsectPoint);
-	}
-	for (uint i = 1; i < skeletonEdges.size(); i++) {
-		intsectPoint = vec3(0.f);
-		intersectingPoint(	roofPerimeter[i-1], skeletonEdges[i-1],
-							roofPerimeter[i], skeletonEdges[i], intsectPoint);
-		if (intsectPoint != vec3(0.f) && length(intsectPoint - roofPerimeter[i]) > 1.f) {
-			intersections.push_back(intsectPoint);
-		}
-	}
-
-	for (uint i = 0; i < intersections.size() - 1; i++) {
-		if (length(intersections[i + 1] - intersections[i]) < 1.f) {
-			intersections.erase(intersections.begin() + i);
-		}
-	}
-
+	/* here onwards sets the roofPoints and the vertices to return */
 	roofPoints.clear();
-
 	roofPoints.push_back(vec3(0.f, -2.f, 0.f));
 
 	float distance;
-	vec3 wallPos;
-	vec3 p1;
-	vec3 p2;
-	vec3 p3;
-	vec3 normal;
+	vec3 wallPos, p1, p2, p3, normal;
 	uint save = 0;
 	for (uint i = 0; i < roofPerimeter.size() - 2; i++) {
 		wallPos = (roofPerimeter[i+1] + roofPerimeter[i]) / 2.f;
@@ -594,7 +595,6 @@ void FloorGraph::setRoof(vector<vec3> &vertices, vector<vec3> &normals) {
 					save = j;
 				}
 				distance = length(wallPos - intersections[j]);
-
 			}
 		}
 
@@ -603,14 +603,13 @@ void FloorGraph::setRoof(vector<vec3> &vertices, vector<vec3> &normals) {
 		p3 = roofPerimeter[i + 1] + vec3(0, -1.01f, 0);
 
 		normal = normalize(cross(p2 - p1, p3 - p1));
-		if (normal.y > 0.f) {
+
+		//if (normal.y > 0.f) {
 			normals.push_back(normal);
 			vertices.push_back(p1);
 			vertices.push_back(p2);
 			vertices.push_back(p3);
-		} else {
-			roofPoints.push_back(p2);
-		}
+		//} else roofPoints.push_back(p2);
 	}
 
 	roofPoints.push_back(intersections[0] + vec3(0, -2.f, 0));
