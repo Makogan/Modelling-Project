@@ -187,21 +187,30 @@ void FloorGraph::getRoomsPos(vector<vec3> &vertices)
 
 void FloorGraph::setDoors()
 {
-	for (Room* room : graph) {
+	Room* room;
+	queue<int> queue;
+	queue.push(0);
+	while (!queue.empty()) {
+		room = graph[queue.front()];
+		queue.pop();
+
 		room->doors.clear();
-		room->setDoorPos();
+
+		for (Room* neib : room->neighbours) {
+			room->setDoorPos(neib);
+			if (room->index < neib->index)
+				queue.push(neib->index);
+		}
 	}
 }
 
-void FloorGraph::getDoors(vector<vec3> &vertices) {
+void FloorGraph::getDoors(vector<vec3> &vertices)
+{
 	vertices.clear();
 	
-	Room* room = graph[0];
-	
+	Room* room;
 	queue<int> queue;
-	for (Room* neib : room->neighbours) {
-		queue.push(neib->index);
-	}
+	queue.push(0);
 
 	while (!queue.empty()) {
 		room = graph[queue.front()];

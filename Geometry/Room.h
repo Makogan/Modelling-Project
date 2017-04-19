@@ -39,7 +39,7 @@ public:
     void increaseArea ();
     void initializeExpansionRates();
 
-    void setDoorPos();
+    void setDoorPos(Room* otherRoom);
 };
 
 vector<Room*> Room::createRooms(int type, float size, int baseIndex, int maxNumRooms)
@@ -164,63 +164,57 @@ void intersectingPoint(vec3 line1Pos, vec3 line1Dir, vec3 line2Pos, vec3 line2Di
   outputVec = vec3(intsectX, line1Pos.y, intsectZ);
 }
 
-void Room::setDoorPos() {
+void Room::setDoorPos(Room* otherRoom) {
   // door is placed at the intersection between the edge of the graph and the wall of this room
-  if (index == 0) {
-    return;
-  } else {
-    vec3 edgeVector = parent->basePos - basePos;
-    vec3 edgeStartPos = basePos;
-    vec3 wallVector;
-    vec3 wallStartPos;
+  vec3 edgeVector = otherRoom->basePos - basePos;
+  vec3 edgeStartPos = basePos;
+  vec3 wallVector;
+  vec3 wallStartPos;
 
-    /* first quadrant, top right */
-    if (edgeVector.x >= 0.f && edgeVector.z >= 0.f) {
-      wallStartPos = upRightPos;
-      getWallByQuadrant(this, wallVector, wallStartPos, edgeVector);
-      if (wallVector.z == 0.f && !renderWall[0] && !parent->renderWall[2])
-          return;
-       else if (wallVector.z != 0.f && !renderWall[3] && !parent->renderWall[1])
-          return;
-    }
+  /* first quadrant, top right */
+  if (edgeVector.x >= 0.f && edgeVector.z >= 0.f) {
+    wallStartPos = upRightPos;
+    getWallByQuadrant(this, wallVector, wallStartPos, edgeVector);
+    if (wallVector.z == 0.f && !renderWall[0])
+        return;
+     else if (wallVector.z != 0.f && !renderWall[3])
+        return;
+  }
 
-    /* second quadrant, top left */
-    else if (edgeVector.x < 0.f && edgeVector.z >= 0.f) {
-      wallStartPos = vec3(downLeftPos.x, basePos.y, upRightPos.z);
-      getWallByQuadrant(this, wallVector, wallStartPos, edgeVector);
-      if (wallVector.x == 0.f && !renderWall[1] && !parent->renderWall[3])
-          return;
-       else if (wallVector.x != 0.f && !renderWall[0] && !parent->renderWall[2])
-          return;
-    }
+  /* second quadrant, top left */
+  else if (edgeVector.x < 0.f && edgeVector.z >= 0.f) {
+    wallStartPos = vec3(downLeftPos.x, basePos.y, upRightPos.z);
+    getWallByQuadrant(this, wallVector, wallStartPos, edgeVector);
+    if (wallVector.x == 0.f && !renderWall[1])
+        return;
+     else if (wallVector.x != 0.f && !renderWall[0])
+        return;
+  }
 
-    /* third quadrant, bottom left */
-    else if (edgeVector.x <= 0.f && edgeVector.z < 0.f) {
-      wallStartPos = downLeftPos;
-      getWallByQuadrant(this, wallVector, wallStartPos, edgeVector);
-      if (wallVector.z == 0.f && !renderWall[2] && !parent->renderWall[0])
-          return;
-       else if (wallVector.z != 0.f && !renderWall[1] && !parent->renderWall[3])
-          return;
-    }
+  /* third quadrant, bottom left */
+  else if (edgeVector.x <= 0.f && edgeVector.z < 0.f) {
+    wallStartPos = downLeftPos;
+    getWallByQuadrant(this, wallVector, wallStartPos, edgeVector);
+    if (wallVector.z == 0.f && !renderWall[2])
+        return;
+     else if (wallVector.z != 0.f && !renderWall[1])
+        return;
+  }
 
-    /* fourth quadrant, bottom right */
-    else if (edgeVector.x > 0.f && edgeVector.z < 0.f) {
-      wallStartPos = vec3(upRightPos.x, basePos.y, downLeftPos.z);
-      getWallByQuadrant(this, wallVector, wallStartPos, edgeVector);
-      if (wallVector.x == 0.f && !renderWall[3] && !parent->renderWall[1])
-          return;
-       else if (wallVector.x != 0.f && !renderWall[2] && !parent->renderWall[0])
-          return;
-    }
+  /* fourth quadrant, bottom right */
+  else if (edgeVector.x > 0.f && edgeVector.z < 0.f) {
+    wallStartPos = vec3(upRightPos.x, basePos.y, downLeftPos.z);
+    getWallByQuadrant(this, wallVector, wallStartPos, edgeVector);
+    if (wallVector.x == 0.f && !renderWall[3])
+        return;
+     else if (wallVector.x != 0.f && !renderWall[2])
+        return;
+  }
 
-
-    vec3 doorPos = vec3(0.f);
-    (intersectingPoint(edgeStartPos, edgeVector, wallStartPos, wallVector, doorPos));
-    if (doorPos != vec3(0.f)) {
-      doors.push_back(doorPos);
-      parent->doors.push_back(doorPos);
-    }
+  vec3 doorPos = vec3(0.f);
+  (intersectingPoint(edgeStartPos, edgeVector, wallStartPos, wallVector, doorPos));
+  if (doorPos != vec3(0.f)) {
+    doors.push_back(doorPos);
   }
 }
 
