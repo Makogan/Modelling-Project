@@ -363,6 +363,7 @@ void renderRooms(Geometry shape, GLuint program)
 		shape.normals.clear();
 		shape.indices.clear();
 
+		loadColor(vec4(1,0,1,1), program);
 		setDrawingMode(1, program);
 		fg.setRoof(shape.vertices, shape.normals);
 		loadGeometryArrays(program, shape);
@@ -371,10 +372,11 @@ void renderRooms(Geometry shape, GLuint program)
 		shape.vertices.clear();
 		shape.normals.clear();
 		shape.indices.clear();
-
+		
 		fg.getRoofTop(shape.vertices);
 		loadGeometryArrays(program, shape);
 		render(program, shape, GL_TRIANGLE_FAN);
+
 	}
 }
 //**************************************************************************************\\
