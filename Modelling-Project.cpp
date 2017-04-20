@@ -801,7 +801,7 @@ float projectionOutput(GLFWwindow* window, vec3 pos) {
 	int width, height;
 	glfwGetWindowSize(window, &width, &height);
 
-	vec2 v = vec2(xpos, height - ypos - 16);
+	vec2 v = vec2(xpos, height - ypos/* - 16*/);
 
 	vec3 screenPos = project(pos, view, proj, vec4(0.f,0.f,(float)width, (float)height));
 	float depth = screenPos.z;
@@ -912,7 +912,7 @@ void cursor_pos_callback(GLFWwindow* window, double xpos, double ypos)
 		}
 
 		float depth = project(pos, cam.getViewMatrix(), cam.getPerspectiveMatrix(), vec4(0.f,0.f,(float)width, (float)height)).z;
-		vec3 pos3d = unProject(vec3(xpos, height - ypos - 16, depth), cam.getViewMatrix(), cam.getPerspectiveMatrix(), vec4(0.f,0.f,(float)width, (float)height));
+		vec3 pos3d = unProject(vec3(xpos, height - ypos/* - 16*/, depth), cam.getViewMatrix(), cam.getPerspectiveMatrix(), vec4(0.f,0.f,(float)width, (float)height));
 
 		vec3 upRightDisp = room->upRightPos - room->basePos;
 		vec3 downLeftDisp = room->downLeftPos - room->basePos;

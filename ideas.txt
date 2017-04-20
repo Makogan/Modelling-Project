@@ -1,11 +1,11 @@
 Ideas
 - texture the walls and the roof
-- make sure doors are on both rooms that they connect
 - set window positions randomly on outside wall and the connecting inside wall
 - second floor, fits on top of the outline of the first floor (with fewer rooms). also staircases are now necessary
 - furniture being dragged in from UI, integrating obj files
 
 Done
+- make sure doors are on both rooms that they connect
 - move basePos without moving room
 - thick, 3d walls with normals on both sides (currently they are only '2D')
 - removable walls, add a boolean for every wall. when a wall is rendered, check the boolean

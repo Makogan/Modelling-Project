@@ -611,7 +611,7 @@ void FloorGraph::setRoof(vector<vec3> &vertices, vector<vec3> &normals) {
 		p2 = roofPerimeter[i] + vec3(0, -1.01f, 0);
 		p3 = roofPerimeter[i + 1] + vec3(0, -1.01f, 0);
 
-		normal = normalize(cross(p2 - p1, p3 - p1));
+		normal = normalize(cross(p3 - p1, p2 - p1));
 
 		//if (normal.y > 0.f) {
 			normals.push_back(normal);
