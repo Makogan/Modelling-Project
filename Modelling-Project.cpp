@@ -120,6 +120,9 @@ bool leftToggle = true;
 bool downToggle = true;
 bool rightToggle = true;
 
+/* used so that windows positions are only calculated once */
+bool windowsSet = false;
+
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 //========================================================================================
@@ -220,12 +223,23 @@ int main(int argc, char **argv)
 		if(loadViewProjMatrix(cam, programs[0]) != 0)
 			return 1;
 
-		if (isExpanding) fg.expandRooms();
-		if (!isExpanding) fg.setPerimeter(fg.housePerimeter, 0.02f);
-		fg.setDoors();
-		for (Room* room : fg.graph) {
-			room->setRoomGeometry(is3D);
+		if (isExpanding) {
+			fg.expandRooms();
+			windowsSet = false;
+			fg.windows.clear();
 		}
+		else { 
+			fg.setPerimeter(fg.housePerimeter, 0.02f);
+			if (!windowsSet) {
+				fg.setWindows();
+				windowsSet = true;
+			}
+		}
+
+		fg.setDoors();
+		
+		for (Room* room : fg.graph)
+			room->setRoomGeometry(is3D);
 
 		renderRooms(shapes[0], programs[0]);
 
@@ -327,6 +341,16 @@ void renderRooms(Geometry shape, GLuint program)
 	fg.getDoors(shape.vertices);
 	loadGeometryArrays(program, shape);
 	render(program, shape, GL_POINTS);
+
+	shape.vertices.clear();
+	shape.normals.clear();
+	shape.indices.clear();
+
+	if (windowsSet && !isExpanding) {
+		fg.getWindows(shape.vertices);
+		loadGeometryArrays(program, shape);
+		render(program, shape, GL_POINTS);
+	}
 
 	shape.vertices.clear();
 	shape.normals.clear();

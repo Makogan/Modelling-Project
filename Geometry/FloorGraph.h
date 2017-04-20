@@ -11,6 +11,7 @@ public:
   vector<Room*> graph;
   vector<vec3> housePerimeter;
   vector<vec3> roofPoints;
+  vector<vec3> windows;
 
   FloorGraph();
   void printGraphData();
@@ -34,6 +35,8 @@ public:
   void getCeiling(vector<vec3> &vertices);
   void setRoof(vector<vec3> &vertices, vector<vec3> &normals);
   void getRoofTop(vector<vec3> &vertices);
+  void setWindows();
+  void getWindows(vector<vec3> &vertices);
 
   float findLowestPos();
   float findHighestPos();
@@ -628,5 +631,56 @@ void FloorGraph::setRoof(vector<vec3> &vertices, vector<vec3> &normals) {
 void FloorGraph::getRoofTop(vector<vec3> &vertices) {
 	for (vec3 roofPoint : roofPoints) {
 		vertices.push_back(roofPoint);
+	}
+}
+
+void FloorGraph::setWindows() {
+	windows.clear();
+	cout << "new windows" << endl;
+	cout << "numWalls: " << endl;
+	vec3 wall;
+	int maxWindows = 0;
+	int numWindows;
+	for (uint i = 0; i < housePerimeter.size() - 2; i++) {
+		cout << "Wall " << i << ":" <<endl;
+		cout << "\tPosition: " << housePerimeter[i] << endl;
+		wall = housePerimeter[i + 1] - housePerimeter[i];
+		maxWindows = 0;
+
+		cout << "\tlength: " << length(wall) << endl;
+
+		if (length(wall) < 1.f) {
+			cout << "\tCONTINUING" << endl;
+			continue;
+		}
+		else maxWindows = 3;
+
+		numWindows = rand() % maxWindows + 1;
+		cout << "\tnumWindows: " << numWindows << endl;
+
+		vec3 windowDisp;
+		vec3 returnVec;
+		for (int j = 0; j < numWindows; j++) {
+			if (wall.x == 0) {
+				windowDisp = vec3(0.f, 0.f, ((wall.z / float(numWindows)) * (j + 0.5f)));
+				cout << "\t\twindowDisp: " << windowDisp << endl;
+				returnVec = housePerimeter[i] + windowDisp;
+				cout << "\t\twindowPos = " << returnVec << endl;
+				windows.push_back(returnVec);
+			}
+			else if (wall.z == 0) {
+				windowDisp = vec3(((wall.x / float(numWindows)) * j) + 0.5, 0.f, 0.f);
+				cout << "\t\twindowDisp: " << windowDisp << endl;
+				returnVec = housePerimeter[i] + windowDisp;
+				cout << "\t\twindowPos = " << returnVec << endl;
+				windows.push_back(returnVec);
+			}
+		}
+	}
+}
+
+void FloorGraph::getWindows(vector<vec3> &vertices) {
+	for (vec3 window : windows) {
+		vertices.push_back(window);
 	}
 }
