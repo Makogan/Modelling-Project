@@ -73,6 +73,14 @@ struct Geometry
 	vector<uint> indices;
 	vector<vec3> normals;
 };
+
+struct Texture
+{
+	GLuint textureID;
+	GLuint target;
+	int width;
+	int height;
+};
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -152,6 +160,9 @@ void deleteShader(Shader &s);
 void createGeometry(Geometry &g, vector<vec3> vertices, vector<uint> indices);
 void createGeometry(Geometry &g);
 void deleteGeometry(Geometry &g);
+
+bool InitializeTexture(Texture* texture, const char* filename, GLuint target = GL_TEXTURE_2D);
+void DestroyTexture(Texture *texture);
 
 GLFWwindow* createWindow();
 
@@ -508,7 +519,6 @@ int loadViewProjMatrix(Camera &c, GLuint &program)
 	loc = glGetUniformLocation(program, "proj");
 	if(loc == GL_INVALID_VALUE || loc==GL_INVALID_OPERATION)
 	{
-
 		cerr << "Error returned when trying to find uniform location."
 			<< "\nuniform: proj"
 			<< "Error num: " << loc
@@ -672,6 +682,49 @@ void deleteGeometry(Geometry &g)
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 	glDeleteBuffers(1, &(g.elmentBuffer));
 }
+//########################################################################################
+
+
+//========================================================================================
+/*
+*	Texture Functions:
+*/
+//========================================================================================
+
+bool InitializeTexture(Texture* texture, const char* filename, GLuint target = GL_TEXTURE_2D)
+{
+	int numComponents;
+	stbi_set_flip_vertically_on_load(true);
+	unsigned char *data = stbi_load(filename, &texture->width, &texture->height, &numComponents, 0);
+	if (data != nullptr)
+	{
+		texture->target = target;
+		glGenTextures(1, &texture->textureID);
+		glBindTexture(texture->target, texture->textureID);
+		GLuint format = numComponents == 3 ? GL_RGB : GL_RGBA;
+		//cout << numComponents << endl;
+		glTexImage2D(texture->target, 0, format, texture->width, texture->height, 0, format, GL_UNSIGNED_BYTE, data);
+
+		// Note: Only wrapping modes supported for GL_TEXTURE_RECTANGLE when defining
+		// GL_TEXTURE_WRAP are GL_CLAMP_TO_EDGE or GL_CLAMP_TO_BORDER
+		glTexParameteri(texture->target, GL_TEXTURE_WRAP_S, GL_REPEAT);
+		glTexParameteri(texture->target, GL_TEXTURE_WRAP_T, GL_REPEAT);
+		glTexParameteri(texture->target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(texture->target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+		// Clean up
+		glBindTexture(texture->target, 0);
+		stbi_image_free(data);
+	}
+	return true; //error
+}
+
+void DestroyTexture(Texture *texture)
+{
+	glBindTexture(texture->target, 0);
+	glDeleteTextures(1, &texture->textureID);
+}
+
 //########################################################################################
 
 //========================================================================================
@@ -1051,6 +1104,7 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
     else if(key == GLFW_KEY_F && action == GLFW_PRESS)
     	drawCeiling = !drawCeiling;
     else if(key == GLFW_KEY_R && action == GLFW_PRESS) {
+    	cout << "\nNew floor plan has been created: " << endl;
 		fg = FloorGraph();
 		fg.printGraphData();
 		fg.setRoomsPos();
@@ -1060,6 +1114,10 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 		drawCeiling = false;
 		isExpanding = true;
 		windowsSet = false;
+		upToggle = true;
+		leftToggle = true;
+		downToggle = true;
+		rightToggle = true;
    	}
 }
 //########################################################################################
