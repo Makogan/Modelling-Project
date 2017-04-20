@@ -111,6 +111,9 @@ bool drawCeiling = false;
 /* toggles room expansion using space bar */
 bool isExpanding = true;
 
+/* used so that windows positions are only calculated once */
+bool windowsSet = false;
+
 /* toggles room movement vs. basePos movement using left control */
 bool leftCtrlPressed;
 
@@ -119,9 +122,6 @@ bool upToggle = true;
 bool leftToggle = true;
 bool downToggle = true;
 bool rightToggle = true;
-
-/* used so that windows positions are only calculated once */
-bool windowsSet = false;
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -348,6 +348,15 @@ void renderRooms(Geometry shape, GLuint program)
 
 	if (windowsSet && !isExpanding) {
 		fg.getWindows(shape.vertices);
+		loadGeometryArrays(program, shape);
+		render(program, shape, GL_POINTS);
+
+		shape.vertices.clear();
+		shape.normals.clear();
+		shape.indices.clear();
+
+		loadColor(vec4(1,0.5,0,1), program);
+		fg.getFrontDoor(shape.vertices);
 		loadGeometryArrays(program, shape);
 		render(program, shape, GL_POINTS);
 	}
@@ -1041,5 +1050,16 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
     	rightToggle = !rightToggle;
     else if(key == GLFW_KEY_F && action == GLFW_PRESS)
     	drawCeiling = !drawCeiling;
+    else if(key == GLFW_KEY_R && action == GLFW_PRESS) {
+		fg = FloorGraph();
+		fg.printGraphData();
+		fg.setRoomsPos();
+		for (Room* room : fg.graph)
+			room->initializeExpansionRates();
+		is3D = false;
+		drawCeiling = false;
+		isExpanding = true;
+		windowsSet = false;
+   	}
 }
 //########################################################################################

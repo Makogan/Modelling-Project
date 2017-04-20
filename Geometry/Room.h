@@ -14,6 +14,7 @@ public:
     int index;
     vector<Room*> neighbours;
     vector<vec3> doors;
+    vector<vec3> roomWindows;
     Room* parent;
 
     vec3 basePos;
@@ -40,6 +41,7 @@ public:
     void initializeExpansionRates();
 
     void setDoorPos(Room* otherRoom);
+    void findWindowsInRoom(vector<vec3>& windows, vec3& frontDoorRoom, vec3& frontDoorPerim);
 };
 
 vector<Room*> Room::createRooms(int type, float size, int baseIndex, int maxNumRooms)
@@ -271,5 +273,68 @@ void Room::initializeExpansionRates() {
   } else if (-dirVector.z > 0.f) {
    upExpand += 0.001f;
    downExpand -= 0.001f;
+  }
+}
+
+float pointToLineDist(vec3 point, vec3 linePos, vec3 lineDir) {
+  float a = lineDir.x;
+  float b = lineDir.z;
+  float c = -(a * linePos.x) - (b * linePos.z);
+  float distance = abs((a * point.x) + (b * point.z) + c) / sqrt((a*a) + (b*b));
+  return distance;
+}
+
+void Room::findWindowsInRoom(vector<vec3>& windows, vec3& frontDoorRoom, vec3& frontDoorPerim) {
+  roomWindows.clear();
+
+  vec3 corner1 = upRightPos;
+  vec3 corner2 = vec3(downLeftPos.x, basePos.y, upRightPos.z);
+  vec3 corner3 = downLeftPos;
+  vec3 corner4 = vec3(upRightPos.x, basePos.y, downLeftPos.z);
+
+  vec3 wall1 = corner2 - corner1;
+  vec3 wall2 = corner3 - corner2;
+  vec3 wall3 = corner4 - corner3;
+  vec3 wall4 = corner1 - corner4;
+
+  vec3 window;
+  for (uint i = 0; i < windows.size(); i++) {
+    window = windows[i];
+    if (pointToLineDist(window, corner1, wall1) <= 0.021f) {
+      roomWindows.push_back(window + vec3(-0.02f, 0.f, 0.f));
+      if ((type == 0) && (frontDoorRoom == vec3(0.f))){
+        frontDoorPerim = roomWindows.back();
+        frontDoorRoom = window;
+        roomWindows.pop_back();
+        windows.erase(windows.begin() + i);
+      }
+    }
+    else if (pointToLineDist(window, corner2, wall2) <= 0.021f) {
+      roomWindows.push_back(window + vec3(0.f, 0.f, -0.02f));
+      if ((type == 0) && (frontDoorRoom == vec3(0.f))){
+        frontDoorPerim = roomWindows.back();
+        frontDoorRoom = window;
+        roomWindows.pop_back();
+        windows.erase(windows.begin() + i);
+      }
+    }
+    else if (pointToLineDist(window, corner3, wall3) <= 0.021f) {
+      roomWindows.push_back(window + vec3(0.02f, 0.f, 0.f));
+      if ((type == 0) && (frontDoorRoom == vec3(0.f))){
+        frontDoorPerim = roomWindows.back();
+        frontDoorRoom = window;
+        roomWindows.pop_back();
+        windows.erase(windows.begin() + i);
+      }
+    }
+    else if (pointToLineDist(window, corner4, wall4) <= 0.021f) {
+      roomWindows.push_back(window + vec3(0.f, 0.f, 0.02f));
+      if ((type == 0) && (frontDoorRoom == vec3(0.f))){
+        frontDoorPerim = roomWindows.back();
+        frontDoorRoom = window;
+        roomWindows.pop_back();
+        windows.erase(windows.begin() + i);
+      }
+    }
   }
 }

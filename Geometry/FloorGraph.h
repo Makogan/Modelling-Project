@@ -12,6 +12,8 @@ public:
   vector<vec3> housePerimeter;
   vector<vec3> roofPoints;
   vector<vec3> windows;
+  vec3 frontDoorRoom = vec3(0.f);
+  vec3 frontDoorPerim = vec3(0.f);
 
   FloorGraph();
   void printGraphData();
@@ -37,6 +39,7 @@ public:
   void getRoofTop(vector<vec3> &vertices);
   void setWindows();
   void getWindows(vector<vec3> &vertices);
+  void getFrontDoor(vector<vec3> &vertices);
 
   float findLowestPos();
   float findHighestPos();
@@ -636,46 +639,42 @@ void FloorGraph::getRoofTop(vector<vec3> &vertices) {
 
 void FloorGraph::setWindows() {
 	windows.clear();
-	cout << "new windows" << endl;
-	cout << "numWalls: " << endl;
+	frontDoorRoom = vec3(0.f);
+	frontDoorPerim = vec3(0.f);
+	
 	vec3 wall;
-	int maxWindows = 0;
-	int numWindows;
 	for (uint i = 0; i < housePerimeter.size() - 2; i++) {
-		cout << "Wall " << i << ":" <<endl;
-		cout << "\tPosition: " << housePerimeter[i] << endl;
 		wall = housePerimeter[i + 1] - housePerimeter[i];
-		maxWindows = 0;
+		int maxWindows = 0;
 
-		cout << "\tlength: " << length(wall) << endl;
-
-		if (length(wall) < 1.f) {
-			cout << "\tCONTINUING" << endl;
+		if (length(wall) < 0.5f)
 			continue;
-		}
+		else if (length(wall) < 1.2f)
+			maxWindows = 1;
+		else if (length(wall) < 2.f)
+			maxWindows = 2;
 		else maxWindows = 3;
 
-		numWindows = rand() % maxWindows + 1;
-		cout << "\tnumWindows: " << numWindows << endl;
+		int numWindows = rand() % maxWindows + 1;
 
 		vec3 windowDisp;
 		vec3 returnVec;
 		for (int j = 0; j < numWindows; j++) {
 			if (wall.x == 0) {
 				windowDisp = vec3(0.f, 0.f, ((wall.z / float(numWindows)) * (j + 0.5f)));
-				cout << "\t\twindowDisp: " << windowDisp << endl;
 				returnVec = housePerimeter[i] + windowDisp;
-				cout << "\t\twindowPos = " << returnVec << endl;
 				windows.push_back(returnVec);
 			}
-			else if (wall.z == 0) {
-				windowDisp = vec3(((wall.x / float(numWindows)) * j) + 0.5, 0.f, 0.f);
-				cout << "\t\twindowDisp: " << windowDisp << endl;
+			else if (wall.z < 0.01) {
+				windowDisp = vec3(((wall.x / float(numWindows)) * (j + 0.5f)), 0.f, 0.f);
 				returnVec = housePerimeter[i] + windowDisp;
-				cout << "\t\twindowPos = " << returnVec << endl;
 				windows.push_back(returnVec);
 			}
 		}
+	}
+
+	for (Room* room : graph) {
+		room->findWindowsInRoom(windows, frontDoorRoom, frontDoorPerim);
 	}
 }
 
@@ -683,4 +682,15 @@ void FloorGraph::getWindows(vector<vec3> &vertices) {
 	for (vec3 window : windows) {
 		vertices.push_back(window);
 	}
+
+	for (Room* room : graph) {
+		for (vec3 roomWindow : room->roomWindows) {
+			vertices.push_back(roomWindow);
+		}
+	}
+}
+
+void FloorGraph::getFrontDoor(vector<vec3> &vertices) {
+	vertices.push_back(frontDoorRoom);
+	vertices.push_back(frontDoorPerim);
 }
