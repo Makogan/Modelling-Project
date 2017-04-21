@@ -2,23 +2,27 @@
 
 in vec4 Normal;
 in vec3 vertexPos;
+in vec2 textCoord;
 
 out vec4 outColor;
 
 uniform vec4 color = vec4(1);
 uniform vec3 cameraPos = vec3(0);
 uniform int drawMode = 1;
+uniform sampler2D tex;
 
 void main()
 {
   vec3 light = vec3(0, 10, 0);
-  if(drawMode == 0)
-    outColor = color;
+  
+  outColor = color;
+  if(drawMode == 2)
+    outColor = texture(tex, textCoord);  
   else
   {
     vec3 l = vec3(light-vertexPos);
   	l = normalize(l);
-  	vec3 c = vec3(color);
+  	vec3 c = vec3(outColor);
   	vec3 n = vec3(Normal);
     n = normalize(n);
   	vec3 e = cameraPos-vertexPos;

@@ -32,8 +32,8 @@ public:
   void setDoors();
   void getDoors(vector<vec3> &vertices);
   void setPerimeter(vector<vec3> &perimeter,float offset);
-  void getHousePerimeter(bool is3D, vector<vec3> &vertices, vector<vec3> &normals, vector<uint> &indices);
-  void getGround(bool is3D, vector<vec3> &vertices, vector<vec3> &normals, vector<uint> &indices);
+  void getHousePerimeter(bool is3D, vector<vec3> &vertices, vector<vec3> &normals, vector<vec2> &uvs, vector<uint> &indices);
+  void getGround(bool is3D, vector<vec3> &vertices, vector<vec3> &normals, vector<vec2> &uvs, vector<uint> &indices);
   void getCeiling(vector<vec3> &vertices);
   void setRoof(vector<vec3> &vertices, vector<vec3> &normals);
   void getRoofTop(vector<vec3> &vertices);
@@ -326,10 +326,11 @@ void FloorGraph::setPerimeter(vector<vec3> &perimeter, float offset){
 
 }
 
-void FloorGraph::getHousePerimeter(bool is3D, vector<vec3> &vertices, vector<vec3> &normals, vector<uint> &indices) {
+void FloorGraph::getHousePerimeter(bool is3D, vector<vec3> &vertices, vector<vec3> &normals, vector<vec2> &uvs, vector<uint> &indices) {
 	for (uint i = 0; i < housePerimeter.size(); i++) {
 		if (is3D) {
 			vector<vec3> verts, norms;
+			vector<vec2> textCoords;
 			vector<uint> indexes;
 
 			vec3 offsetEnd = housePerimeter[(i+2)%housePerimeter.size()];
@@ -338,7 +339,7 @@ void FloorGraph::getHousePerimeter(bool is3D, vector<vec3> &vertices, vector<vec
 
 			vec3 offset =  offsetEnd - offsetStart;
 			vec3 wallCorner = (offsetStart + normalize(offset) * 0.1f);
-			createPrism(verts, norms, indexes, current, wallCorner, -1);
+			createPrism(verts, norms, indexes, textCoords, current, wallCorner, -1);
 
 			uint iOffset = vertices.size();
 			for(uint i: indexes)
@@ -346,6 +347,7 @@ void FloorGraph::getHousePerimeter(bool is3D, vector<vec3> &vertices, vector<vec
 
 			vertices.insert(vertices.end(), verts.begin(), verts.end());
 			normals.insert(normals.end(), norms.begin(), norms.end());
+			uvs.insert(uvs.end(), textCoords.begin(), textCoords.end());
 		} else {
 			vertices.push_back(housePerimeter[i]);
 		}
@@ -373,14 +375,18 @@ void FloorGraph::getCeiling(vector<vec3> &vertices) {
 	vertices.push_back(ceilingPerimeter[0] + vec3(0.f, -1.01f, 0.f));
 }
 
-void FloorGraph::getGround(bool is3D, vector<vec3> &vertices, vector<vec3> &normals, vector<uint> &indices) {
+void FloorGraph::getGround(bool is3D, vector<vec3> &vertices, vector<vec3> &normals, vector<vec2> &uvs, vector<uint> &indices) {
 	vertices.clear();
 	normals.clear();
 	indices.clear();
+	uvs.clear();
 
 	vec3 groundCorner1 = vec3(15.f, 0.1f, 15.f);
 	vec3 groundCorner2 = vec3(-15.f, 0.1f, -15.f);
-	createPrism(vertices, normals, indices, groundCorner1, groundCorner2, -0.09f);
+	createPrism(vertices, normals, indices, uvs, groundCorner1, groundCorner2, -0.09f);
+
+	for(uint i=0; i<uvs.size(); i++)
+		uvs[i] *=10;
 }
 
 void changeExpansion(Room* room1, Room* room2) {

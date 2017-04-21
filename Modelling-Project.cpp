@@ -37,6 +37,10 @@
 #include <ft2build.h>
 #include <time.h>
 #include FT_FREETYPE_H
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb/stb_image.h>
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include <stb/stb_image_write.h>
 
 #include "Camera.h"
 //#include "CustomOperators.h"
@@ -68,10 +72,12 @@ struct Geometry
 	GLuint vertexBuffer;
 	GLuint elmentBuffer;
 	GLuint normalsBuffer;
+	GLuint uvBuffer;
 
 	vector<vec3> vertices;
 	vector<uint> indices;
 	vector<vec3> normals;
+	vector<vec2> uvs;
 };
 
 struct Texture
@@ -139,6 +145,7 @@ bool rightToggle = true;
 */
 //========================================================================================
 
+void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void error_callback(int error, const char* description);
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
 void mouse_button_callback(GLFWwindow* window, int button, int action, int mods);
@@ -161,7 +168,8 @@ void createGeometry(Geometry &g, vector<vec3> vertices, vector<uint> indices);
 void createGeometry(Geometry &g);
 void deleteGeometry(Geometry &g);
 
-bool InitializeTexture(Texture* texture, const char* filename, GLuint target = GL_TEXTURE_2D);
+void createTexture(Texture &texture, const char* filename);
+void loadTexture(Texture &texture, GLuint program, const char* uniformName, GLenum textUnit);
 void DestroyTexture(Texture *texture);
 
 GLFWwindow* createWindow();
@@ -176,7 +184,7 @@ int loadCamera(vec3 cameraPos, GLuint program);
 int openGLerror();
 
 void checkToggleWalls();
-void moveCamera();
+void moveCamera(GLFWwindow *window);
 
 double calculateFPS(double prevTime, double currentTime);
 //########################################################################################
@@ -189,6 +197,7 @@ double calculateFPS(double prevTime, double currentTime);
 //**************************************************************************************\\
 //--------------------------------------------------------------------------------------\\
 
+vector<Texture> textures(3);
 int main(int argc, char **argv)
 {
 	srand((time(0)));
@@ -210,6 +219,10 @@ int main(int argc, char **argv)
 	//An error will always be thrown when initializing glew.
 	//It can be safely discarded so we call glGetError() to delete it and move on.
 
+	glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glfwSwapBuffers(window);
+
 //Example code, delete or modify
 //**********************************************************************************
 	vector<GLuint> programs;
@@ -220,6 +233,10 @@ int main(int argc, char **argv)
 	initDefaultProgram(programs, shaders);
 
 	createGeometry(shapes[0]);
+
+	createTexture(textures[0], "Textures/exterior.jpg");
+	createTexture(textures[1], "Textures/roof.jpg");
+	createTexture(textures[2], "Textures/Grass.jpg");
 //***********************************************************************************
 
 	int width, height;
@@ -258,13 +275,13 @@ int main(int argc, char **argv)
 		if(status!=GL_NO_ERROR)
 		{
 			cerr << "\nAn error has ocurred.\n"
-				<< "Error number: " << status << "\nTerminating!" << endl;
+				<< "Error number: " << gluErrorString(status) << "\nTerminating!" << endl;
 			return 1;
 		}
 
 		checkToggleWalls();
 		
-		moveCamera();
+		moveCamera(window);
 		loadCamera(cam.getPosition(), programs[0]);
 
 	    glfwPollEvents();
@@ -295,7 +312,6 @@ void renderRooms(Geometry shape, GLuint program)
 	glEnable(GL_DEPTH_TEST);
 
 	setDrawingMode(1, program);
-
 	for(Room *r: fg.graph)
 	{
 		vec4 color = vec4(0);
@@ -317,7 +333,9 @@ void renderRooms(Geometry shape, GLuint program)
 	shape.indices.clear();
 
 	loadColor(vec4(0.6,0.6,0.6,1), program);
-	fg.getGround(is3D, shape.vertices, shape.normals, shape.indices);
+	setDrawingMode(2, program);
+	loadTexture(textures[2], program, "tex", GL_TEXTURE0);
+	fg.getGround(is3D, shape.vertices, shape.normals, shape.uvs, shape.indices);
 	loadGeometryArrays(program, shape);
 	render(program, shape, GL_TRIANGLES);
 
@@ -382,10 +400,11 @@ void renderRooms(Geometry shape, GLuint program)
 
 	loadColor(vec4(0,0.5f,1,1), program);
 	if (!isExpanding) {
-		fg.getHousePerimeter(is3D, shape.vertices, shape.normals, shape.indices);
+		fg.getHousePerimeter(is3D, shape.vertices, shape.normals, shape.uvs, shape.indices);
 		loadGeometryArrays(program, shape);
 		if (is3D) {
-			setDrawingMode(1, program);
+			setDrawingMode(2, program);
+			loadTexture(textures[0], program, "tex", GL_TEXTURE0);
 			render(program, shape, GL_TRIANGLES);
 		} else {
 			setDrawingMode(0, program);
@@ -444,7 +463,6 @@ void setDrawingMode(int mode, GLuint program)
 	glUniform1i(loc, mode);
 }
 
-//Need more versions of this:
 void loadGeometryArrays(GLuint program, Geometry &g)
 {
 	glUseProgram(program);
@@ -462,9 +480,18 @@ void loadGeometryArrays(GLuint program, Geometry &g)
 	{
 		glEnableVertexAttribArray(1);
 		glBindBuffer(GL_ARRAY_BUFFER, g.normalsBuffer);
-			glVertexAttribPointer(1, 3, GL_FLOAT, GL_TRUE, sizeof(vec3), (void*)0);
+		glVertexAttribPointer(1, 3, GL_FLOAT, GL_TRUE, sizeof(vec3), (void*)0);
 		glBufferData(GL_ARRAY_BUFFER, g.normals.size()*sizeof(vec3),
 			g.normals.data(), GL_DYNAMIC_DRAW);
+	}
+
+	if(g.uvs.size()>0)
+	{
+		glEnableVertexAttribArray(2);
+		glBindBuffer(GL_ARRAY_BUFFER, g.uvBuffer);
+		glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(vec2), (void*)0);
+		glBufferData(GL_ARRAY_BUFFER, g.uvs.size()*sizeof(vec2),
+			g.uvs.data(), GL_DYNAMIC_DRAW);
 	}
 
 	if(g.indices.size()>0)
@@ -634,28 +661,6 @@ string loadSourceFile(string &filepath)
 *	Geometry Functions:
 */
 //========================================================================================
-void createGeometry(Geometry &g, vector<vec3> vertices, vector<uint> indices)
-{
-	glEnableVertexAttribArray(0);
-	glGenBuffers(1, &(g.vertexBuffer));
-	glBindBuffer(GL_ARRAY_BUFFER, g.vertexBuffer);
-	glBufferData(GL_ARRAY_BUFFER, vertices.size()*sizeof(vec3),
-		vertices.data(), GL_DYNAMIC_DRAW);
-
-	glGenBuffers(1, &(g.elmentBuffer));
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, g.elmentBuffer);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, vertices.size()*sizeof(uint),
-		indices.data(), GL_DYNAMIC_DRAW);
-
-	glEnableVertexAttribArray(1);
-	glGenBuffers(1, &g.normalsBuffer);
-
-	glGenVertexArrays(1, &(g.vertexArray));
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-	g.vertices=vertices;
-	g.indices=indices;
-}
 
 void createGeometry(Geometry &g)
 {
@@ -666,6 +671,9 @@ void createGeometry(Geometry &g)
 
 	glEnableVertexAttribArray(1);
 	glGenBuffers(1, &g.normalsBuffer);
+
+	glEnableVertexAttribArray(2);
+	glGenBuffers(1, &g.uvBuffer);
 
 	glGenVertexArrays(1, &(g.vertexArray));
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -691,32 +699,42 @@ void deleteGeometry(Geometry &g)
 */
 //========================================================================================
 
-bool InitializeTexture(Texture* texture, const char* filename, GLuint target = GL_TEXTURE_2D)
+void createTexture(Texture &texture, const char* filename)
 {
-	int numComponents;
-	stbi_set_flip_vertically_on_load(true);
-	unsigned char *data = stbi_load(filename, &texture->width, &texture->height, &numComponents, 0);
-	if (data != nullptr)
+	int components;
+	int tWidth, tHeight;
+
+	//stbi_set_flip_vertically_on_load(true);
+	unsigned char* data = stbi_load(filename, &tWidth, &tHeight, &components, 0);
+	
+	if(data != NULL)
 	{
-		texture->target = target;
-		glGenTextures(1, &texture->textureID);
-		glBindTexture(texture->target, texture->textureID);
-		GLuint format = numComponents == 3 ? GL_RGB : GL_RGBA;
-		//cout << numComponents << endl;
-		glTexImage2D(texture->target, 0, format, texture->width, texture->height, 0, format, GL_UNSIGNED_BYTE, data);
+		glGenTextures(1, &(texture.textureID));
+		glBindTexture(GL_TEXTURE_2D, (texture.textureID));
 
-		// Note: Only wrapping modes supported for GL_TEXTURE_RECTANGLE when defining
-		// GL_TEXTURE_WRAP are GL_CLAMP_TO_EDGE or GL_CLAMP_TO_BORDER
-		glTexParameteri(texture->target, GL_TEXTURE_WRAP_S, GL_REPEAT);
-		glTexParameteri(texture->target, GL_TEXTURE_WRAP_T, GL_REPEAT);
-		glTexParameteri(texture->target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		glTexParameteri(texture->target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		if(components==3)
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, tWidth, tHeight, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+		else if(components==4)
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, tWidth, tHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+	
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-		// Clean up
-		glBindTexture(texture->target, 0);
+		//Clean up
+		glBindTexture(GL_TEXTURE_2D, 0);
 		stbi_image_free(data);
-	}
-	return true; //error
+	} 
+}
+
+void loadTexture(Texture &text, GLuint program, const char* uniformName, GLenum textUnit)
+{
+	glActiveTexture(textUnit);
+	glBindTexture(GL_TEXTURE_2D, text.textureID);
+	
+	GLuint uniformLocation = glGetUniformLocation(program, uniformName);
+	glUniform1i(uniformLocation, 0);
 }
 
 void DestroyTexture(Texture *texture)
@@ -807,6 +825,7 @@ void callBackInit(GLFWwindow* window)
 	glfwSetKeyCallback(window, key_callback);
 	glfwSetCursorPosCallback(window, cursor_pos_callback);
 	glfwSetMouseButtonCallback(window, mouse_button_callback);
+	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
 }
 
@@ -828,7 +847,7 @@ GLFWwindow* createWindow()
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 	glfwWindowHint(GLFW_DECORATED, GL_TRUE);
 	GLFWwindow* window = glfwCreateWindow(mode->width, mode->height-40,
-		"OpenGL Template", NULL, NULL);
+		"House Generator", NULL, NULL);
 	if (!window)
 	{
 
@@ -948,7 +967,7 @@ void checkToggleWalls() {
 	}
 }
 
-void moveCamera() {
+void moveCamera(GLFWwindow *window) {
 	if (wPressed) cam.position += cam.forward*CAM_SPEED;
 	if (sPressed) cam.position -= cam.forward*CAM_SPEED;
 	if (dPressed) cam.position += cam.side*CAM_SPEED;
@@ -965,6 +984,22 @@ void moveCamera() {
     if(kpSubtPressed) cam.incline(radians(-1.f));
     if(kpMultPressed) cam.resetView();
     if(kpDivPressed) cam.resetCamera();
+
+    int state = glfwGetKey(window, GLFW_KEY_KP_6);
+	if (state == GLFW_PRESS)
+		cam.turnH(radians(-1.f));
+
+	state = glfwGetKey(window, GLFW_KEY_KP_4);
+	if (state == GLFW_PRESS)
+		cam.turnH(radians(1.f));
+
+	state = glfwGetKey(window, GLFW_KEY_KP_8);
+	if (state == GLFW_PRESS)
+		cam.turnV(radians(1.f));
+
+	state = glfwGetKey(window, GLFW_KEY_KP_2);
+	if (state == GLFW_PRESS)
+		cam.turnV(radians(-1.f));
 }
 //########################################################################################
 
@@ -973,6 +1008,10 @@ void moveCamera() {
 *	GLFW callback functions:
 */
 //========================================================================================
+void framebuffer_size_callback(GLFWwindow* window, int width, int height)
+{
+    glViewport(0, 0, width, height);
+}
 
 void error_callback(int error, const char* description)
 {
@@ -998,7 +1037,7 @@ void cursor_pos_callback(GLFWwindow* window, double xpos, double ypos)
 		}
 
 		float depth = project(pos, cam.getViewMatrix(), cam.getPerspectiveMatrix(), vec4(0.f,0.f,(float)width, (float)height)).z;
-		vec3 pos3d = unProject(vec3(xpos, height - ypos/* - 16*/, depth), cam.getViewMatrix(), cam.getPerspectiveMatrix(), vec4(0.f,0.f,(float)width, (float)height));
+		vec3 pos3d = unProject(vec3(xpos, height - ypos, depth), cam.getViewMatrix(), cam.getPerspectiveMatrix(), vec4(0.f,0.f,(float)width, (float)height));
 
 		vec3 upRightDisp = room->upRightPos - room->basePos;
 		vec3 downLeftDisp = room->downLeftPos - room->basePos;
@@ -1036,7 +1075,7 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
         glfwSetWindowShouldClose(window, GL_TRUE);
 
-    /*else if(key == GLFW_KEY_F11 && action == GLFW_PRESS)
+    else if(key == GLFW_KEY_F11 && action == GLFW_PRESS)
     {
     	//Get the primary monitor and the monitor attached to the current window
     	const GLFWvidmode* mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
@@ -1056,7 +1095,7 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
     			//subtract 1 to prevent it from going into full screen mode
 
     	glfwMaximizeWindow(window);
-    }*/
+    }
     else if(key == GLFW_KEY_F12 && action == GLFW_PRESS)
     	cout << glfwGetVersionString() << endl;
     else if(key == GLFW_KEY_W && (action == GLFW_PRESS || action == GLFW_RELEASE))
