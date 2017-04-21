@@ -256,7 +256,7 @@ int main(int argc, char **argv)
 			windowsSet = false;
 			fg.windows.clear();
 		}
-		else { 
+		else {
 			fg.setPerimeter(fg.housePerimeter, 0.02f);
 			if (!windowsSet) {
 				fg.setWindows();
@@ -265,7 +265,7 @@ int main(int argc, char **argv)
 		}
 
 		fg.setDoors();
-		
+
 		for (Room* room : fg.graph)
 			room->setRoomGeometry(is3D);
 
@@ -280,7 +280,7 @@ int main(int argc, char **argv)
 		}
 
 		checkToggleWalls();
-		
+
 		moveCamera(window);
 		loadCamera(cam.getPosition(), programs[0]);
 
@@ -706,7 +706,7 @@ void createTexture(Texture &texture, const char* filename)
 
 	//stbi_set_flip_vertically_on_load(true);
 	unsigned char* data = stbi_load(filename, &tWidth, &tHeight, &components, 0);
-	
+
 	if(data != NULL)
 	{
 		glGenTextures(1, &(texture.textureID));
@@ -716,7 +716,7 @@ void createTexture(Texture &texture, const char* filename)
 			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, tWidth, tHeight, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
 		else if(components==4)
 			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, tWidth, tHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
-	
+
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -725,14 +725,14 @@ void createTexture(Texture &texture, const char* filename)
 		//Clean up
 		glBindTexture(GL_TEXTURE_2D, 0);
 		stbi_image_free(data);
-	} 
+	}
 }
 
 void loadTexture(Texture &text, GLuint program, const char* uniformName, GLenum textUnit)
 {
 	glActiveTexture(textUnit);
 	glBindTexture(GL_TEXTURE_2D, text.textureID);
-	
+
 	GLuint uniformLocation = glGetUniformLocation(program, uniformName);
 	glUniform1i(uniformLocation, 0);
 }
@@ -979,7 +979,7 @@ void moveCamera(GLFWwindow *window) {
     if(arrowLeftPressed) cam.turnH(radians(1.f));
     if(arrowUpPressed) cam.turnV(radians(1.f));
     if(arrowDownPressed) cam.turnV(radians(-1.f));
-    
+
     if(kpAddPressed) cam.incline(radians(1.f));
     if(kpSubtPressed) cam.incline(radians(-1.f));
     if(kpMultPressed) cam.resetView();

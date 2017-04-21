@@ -54,11 +54,11 @@ FloorGraph::FloorGraph()
 	addOtherRooms(5, 35, 2, 2.5f, 1, graph);	//add Extra Rooms
 
 	Room* room = graph[0];
-	
+
 	room->basePos = vec3(0.f);
 	room->upRightPos = room->basePos;
 	room->downLeftPos = room->basePos;
-	
+
 	queue<int> queue;
 	queue.push(room->index);
 
@@ -87,7 +87,7 @@ void FloorGraph::printGraphData()
 			cout << neib->index << ", ";
 		}
 
-		if (room->index == 0) 
+		if (room->index == 0)
 			cout << "and that's it." << endl;
 		else
 			cout << "and its parent is Room " << room->parent->index << "." << endl;
@@ -141,7 +141,7 @@ void FloorGraph::concatenateRooms(vector<Room*> newRooms)
 void FloorGraph::getEdges(vector<vec3> &vertices)
 {
 	Room* room = graph[0];
-	
+
 	queue<int> queue;
 	for (Room* neib : room->neighbours) {
 		queue.push(neib->index);
@@ -213,7 +213,7 @@ void FloorGraph::setDoors()
 void FloorGraph::getDoors(vector<vec3> &vertices)
 {
 	vertices.clear();
-	
+
 	Room* room;
 	queue<int> queue;
 	queue.push(0);
@@ -339,7 +339,21 @@ void FloorGraph::getHousePerimeter(bool is3D, vector<vec3> &vertices, vector<vec
 
 			vec3 offset =  offsetEnd - offsetStart;
 			vec3 wallCorner = (offsetStart + normalize(offset) * 0.1f);
-			createPrism(verts, norms, indexes, textCoords, current, wallCorner, -1);
+
+      Wall* w = new Wall(current, wallCorner, -1);
+      for(uint j=0; j < w->indices.size(); j++)
+      {
+        indices.push_back(w->indices[j]+vertices.size());
+      }
+
+      vertices.insert( vertices.end(), w->vertices.begin(), w->vertices.end() );
+      normals.insert( normals.end(), w->normals.begin(), w->normals.end() );
+      uvs.insert(uvs.end(), w->uvs.begin(), w->uvs.end());
+
+    } else {
+      vertices.push_back(housePerimeter[i]);
+    }
+			/*createPrism(verts, norms, indexes, textCoords, current, wallCorner, -1);
 
 			uint iOffset = vertices.size();
 			for(uint i: indexes)
@@ -350,7 +364,7 @@ void FloorGraph::getHousePerimeter(bool is3D, vector<vec3> &vertices, vector<vec
 			uvs.insert(uvs.end(), textCoords.begin(), textCoords.end());
 		} else {
 			vertices.push_back(housePerimeter[i]);
-		}
+		}*/
 	}
 }
 
@@ -501,7 +515,7 @@ void setRoomBasePos(Room* room, Room* papa) {
 void FloorGraph::setRoomsPos()
 {
 	Room* room = graph[0];
-	
+
 	queue<int> queue;
 	for (Room* neib : room->neighbours)
 		queue.push(neib->index);
@@ -541,7 +555,7 @@ void findSkeletonEdges(vector<vec3> walls, vector<vec3> &skeletonEdges) {
 		vec3 dirA = normalize(walls[(i + 1) % walls.size()]);
 		vec3 dirB = normalize(-walls[i]);
 		vec3 dirEdge = normalize(walls[(i + 1) % walls.size()] - walls[i]);
-		
+
 		float dotProd = dot(dirA, dirEdge);
 		float det = dirA.x * dirEdge.z - dirA.z * dirEdge.x;
 		float angle1 = atan2(det, dotProd) * (180.f / M_PI);
@@ -647,7 +661,7 @@ void FloorGraph::setWindows() {
 	windows.clear();
 	frontDoorRoom = vec3(0.f);
 	frontDoorPerim = vec3(0.f);
-	
+
 	vec3 wall;
 	for (uint i = 0; i < housePerimeter.size() - 2; i++) {
 		wall = housePerimeter[i + 1] - housePerimeter[i];
