@@ -353,18 +353,6 @@ void FloorGraph::getHousePerimeter(bool is3D, vector<vec3> &vertices, vector<vec
     } else {
       vertices.push_back(housePerimeter[i]);
     }
-			/*createPrism(verts, norms, indexes, textCoords, current, wallCorner, -1);
-
-			uint iOffset = vertices.size();
-			for(uint i: indexes)
-			  indices.push_back(i+iOffset);
-
-			vertices.insert(vertices.end(), verts.begin(), verts.end());
-			normals.insert(normals.end(), norms.begin(), norms.end());
-			uvs.insert(uvs.end(), textCoords.begin(), textCoords.end());
-		} else {
-			vertices.push_back(housePerimeter[i]);
-		}*/
 	}
 }
 

@@ -1,9 +1,9 @@
 Ideas
-- texture the walls and the roof
 - second floor, fits on top of the outline of the first floor (with fewer rooms). also staircases are now necessary
 - furniture being dragged in from UI, integrating obj files
 
 Done
+- texture the walls and the roof
 - house needs a front door
 - set window positions randomly on outside wall and the connecting inside wall
 - make sure doors are on both rooms that they connect

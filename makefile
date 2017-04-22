@@ -1,4 +1,4 @@
-EXEFILE := roomGenerator
+EXEFILE := houseGenerator
 
 DIRECTORIES = $(filter-out ./ ./.%, $(shell find ./ -maxdepth 10 -type d))
 IFLAGS= -I/usr/include/freetype2
