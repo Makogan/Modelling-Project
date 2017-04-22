@@ -426,19 +426,19 @@ void renderRooms(Geometry shape, GLuint program)
 		shape.normals.clear();
 		shape.indices.clear();
 
-		loadColor(vec4(1,0,1,1), program);
-		setDrawingMode(1, program);
-		fg.setRoof(shape.vertices, shape.normals);
-		loadGeometryArrays(program, shape);
-		render(program, shape, GL_TRIANGLES);
+		// loadColor(vec4(1,0,1,1), program);
+		// setDrawingMode(1, program);
+		// fg.setRoof(shape.vertices, shape.normals);
+		// loadGeometryArrays(program, shape);
+		// render(program, shape, GL_TRIANGLES);
 
-		shape.vertices.clear();
-		shape.normals.clear();
-		shape.indices.clear();
+		// shape.vertices.clear();
+		// shape.normals.clear();
+		// shape.indices.clear();
 
-		fg.getRoofTop(shape.vertices);
-		loadGeometryArrays(program, shape);
-		render(program, shape, GL_TRIANGLE_FAN);
+		// fg.getRoofTop(shape.vertices);
+		// loadGeometryArrays(program, shape);
+		// render(program, shape, GL_TRIANGLE_FAN);
 
 	}
 }
@@ -1074,7 +1074,7 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 {
     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
         glfwSetWindowShouldClose(window, GL_TRUE);
-
+/*
     else if(key == GLFW_KEY_F11 && action == GLFW_PRESS)
     {
     	//Get the primary monitor and the monitor attached to the current window
@@ -1096,6 +1096,7 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 
     	glfwMaximizeWindow(window);
     }
+*/
     else if(key == GLFW_KEY_F12 && action == GLFW_PRESS)
     	cout << glfwGetVersionString() << endl;
     else if(key == GLFW_KEY_W && (action == GLFW_PRESS || action == GLFW_RELEASE))

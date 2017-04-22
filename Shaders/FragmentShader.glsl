@@ -18,7 +18,7 @@ void main()
   outColor = color;
   if(drawMode == 2)
     outColor = texture(tex, textCoord);  
-  else
+  else  if(drawMode == 1)
   {
     vec3 l = vec3(light-vertexPos);
   	l = normalize(l);

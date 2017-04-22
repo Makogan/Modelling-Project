@@ -49,3 +49,11 @@ There are three colours to represent Martin's three classes of rooms: green repr
 Sometimes small gaps are left behind between rooms from the expansion method that cannot be filled in procedurally. The user may either move the other rooms around using our program's manipulative abilities, or simply consider them another room.
 
 Private rooms, by their nature, cannot have their walls be deleted.
+
+## Bugs
+1. The roof in general is a work-in-progress, which is why it lacks a meaningful texture at this point. However, at certain times the roof will find an “intersection” well outside its normal bounds, causing the roof to explode in size.
+2. Moving a room a certain amount to the edge causes the program to crash. This may or may not have an easy fix, but it is nonetheless something to be cautious about.
+3. Sometimes the algorithm only produces a single-roomed building. The reason is not known. A simple restart should fix it (pressing ‘R’).
+4. The front door sometimes goes to private rooms. A simple restart should fix it (pressing ‘R’).
+5. Sometimes our room-spreading algorithm fails, causing certain rooms to flip direction back to the direction of the parent. This causes rooms to sometimes spawn on top of each other, causing the rooms to expand in undefined behaviours (mainly expanding flat as a pancake).
+6. Sometimes, for no discernible reason, restarting the procedural algorithm (pressing ‘R’) causes a segfault. This happens very rarely, and attempts to capture it have failed.
